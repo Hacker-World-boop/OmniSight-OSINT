@@ -506,7 +506,5 @@ git push -u origin main
 
 ## License & Attribution
 
-- **Tool Name:** OmniSight-OSINT (`open_osint.py`)
-- **Author:** Inaam Kaleem (`author = inaam kaleem`)
-- **Target Platform:** Linux Only
+- **Author:** Inaam Kaleem 
 - **License:** [MIT License](LICENSE)
