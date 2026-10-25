@@ -1,24 +1,22 @@
 # Contributing to OmniSight-OSINT
 
-Thank you for your interest in contributing to **OmniSight-OSINT**! 🛡️
+Thank you for your interest in contributing to **OmniSight-OSINT**!
 
 ## How to Contribute
 
 ### 1. Fork & Clone
 ```bash
-git clone https://github.com/YOUR_USERNAME/OmniSight-OSINT.git
+git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
 cd OmniSight-OSINT
 ```
 
-### 2. Set Up Development Environment
+### 2. Set Up Development Environment (Linux)
 ```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux / macOS
+python3 -m venv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
+chmod +x open_osint.py
 ```
 
 ### 3. Create a Feature Branch
@@ -36,16 +34,16 @@ git checkout -b feature/your-feature-name
 ### 5. Test Your Changes
 ```bash
 # Test IP tracking
-python main.py --ip 8.8.8.8
+python3 open_osint.py --ip 8.8.8.8
 
 # Test phone tracking
-python main.py --phone +14155552671
+python3 open_osint.py --phone +14155552671
 
 # Test username enumeration
-python main.py --username testuser
+python3 open_osint.py --username testuser
 
 # Test with verbose logging
-python main.py --ip 1.1.1.1 --verbose
+python3 open_osint.py --ip 1.1.1.1 --verbose
 ```
 
 ### 6. Submit a Pull Request
@@ -56,6 +54,7 @@ python main.py --ip 1.1.1.1 --verbose
 ## Code Style Guidelines
 
 - **Python 3.10+** features are encouraged
+- Engineered for **Linux** platforms
 - Use **Pydantic** models for all data structures
 - Use **aiohttp** for async HTTP requests
 - Use **Rich** for terminal output formatting
@@ -67,7 +66,7 @@ python main.py --ip 1.1.1.1 --verbose
 1. Create a new file under `modules/` (e.g., `modules/dns_tracker.py`)
 2. Define Pydantic models in `modules/models.py`
 3. Implement async functions following the existing pattern
-4. Add display function in `main.py`
+4. Add display function in `open_osint.py`
 5. Register CLI arguments in `parse_arguments()`
 6. Update `README.md` with documentation
 
@@ -75,7 +74,7 @@ python main.py --ip 1.1.1.1 --verbose
 
 - Use GitHub Issues to report bugs or request features
 - Include steps to reproduce, expected vs actual behavior
-- Include your Python version and OS
+- Include your Python version and Linux distribution details
 
 ## Ethical Guidelines
 
@@ -85,5 +84,4 @@ python main.py --ip 1.1.1.1 --verbose
 
 ---
 
-**Lead Maintainer:** Muhammad Inaam Kaleem  
-**Institution:** Riphah International University Faisalabad
+**Lead Maintainer:** Inaam Kaleem

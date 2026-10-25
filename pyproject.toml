@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Muhammad Inaam Kaleem", email = "author@omnisight.local" }
+    { name = "Inaam Kaleem", email = "author@omnisight.local" }
 ]
 keywords = ["osint", "cybersecurity", "reconnaissance", "threat-intelligence", "terminal-ui", "python"]
 classifiers = [
@@ -19,7 +19,7 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -38,7 +38,8 @@ dependencies = [
 ]
 
 [project.scripts]
-omnisight = "main:main"
+open_osint = "open_osint:main"
+omnisight = "open_osint:main"
 
 [project.urls]
 Homepage = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT"

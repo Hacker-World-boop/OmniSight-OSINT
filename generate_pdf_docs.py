@@ -5,8 +5,7 @@ Compiles publication-grade system documentation, architecture diagrams,
 core infrastructure, module deep-dives, accuracy metrics, and the
 terminal startup interface into an official PDF document using ReportLab.
 
-Author: Muhammad Inaam Kaleem
-Institution: Riphah International University Faisalabad
+Author: inaam kaleem
 """
 
 import os
@@ -115,7 +114,7 @@ class NumberedCanvas(canvas.Canvas):
         self.line(54, 46, 8.5 * inch - 54, 46)
         self.setFont(FONT_SANS, 8)
         self.setFillColor(colors.dimgray)
-        self.drawString(54, 32, "Author: Muhammad Inaam Kaleem  |  Riphah International University Faisalabad")
+        self.drawString(54, 32, "Author: inaam kaleem  |  OmniSight-OSINT (Linux Edition)")
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(8.5 * inch - 54, 32, page_str)
         self.restoreState()
@@ -245,9 +244,9 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
 
     cover_table_data = [
         [Paragraph("<b>Document Classification</b>", style_table_cell_bold), Paragraph("Technical Architecture &amp; System Documentation (v1.0.0)", style_table_cell)],
-        [Paragraph("<b>Lead Developer &amp; Author</b>", style_table_cell_bold), Paragraph("<b>Muhammad Inaam Kaleem</b>", style_table_cell)],
-        [Paragraph("<b>Academic Institution</b>", style_table_cell_bold), Paragraph("Riphah International University Faisalabad", style_table_cell)],
-        [Paragraph("<b>Academic Program</b>", style_table_cell_bold), Paragraph("Cybersecurity &amp; Information Assurance", style_table_cell)],
+        [Paragraph("<b>Tool Name</b>", style_table_cell_bold), Paragraph("<b>OmniSight-OSINT (open_osint.py)</b>", style_table_cell)],
+        [Paragraph("<b>Author</b>", style_table_cell_bold), Paragraph("<b>inaam kaleem</b>", style_table_cell)],
+        [Paragraph("<b>Target Platform</b>", style_table_cell_bold), Paragraph("Linux Only (POSIX / Debian / Ubuntu / Kali / Arch)", style_table_cell)],
         [Paragraph("<b>Engineering Stack</b>", style_table_cell_bold), Paragraph("Python 3.10+ | Pure Async (aiohttp, asyncio) | Pydantic v2 | Rich CLI", style_table_cell)],
         [Paragraph("<b>Release Status</b>", style_table_cell_bold), Paragraph("Production-Ready Open-Source Reconnaissance Suite", style_table_cell)],
         [Paragraph("<b>License</b>", style_table_cell_bold), Paragraph("MIT Open-Source License", style_table_cell)],
@@ -299,15 +298,15 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(HRFlowable(width="100%", thickness=1, color=CYAN_ACCENT, spaceBefore=2, spaceAfter=6))
 
     story.append(Paragraph(
-        "Upon execution, <b>OmniSight-OSINT</b> initializes with a stylized cyberpunk terminal header displaying author "
-        "accreditation, academic affiliation, and operational legal notices, followed immediately by an active "
+        "Upon execution on Linux (<code>./open_osint.py</code>), <b>OmniSight-OSINT</b> initializes with a clean terminal header "
+        "displaying the tool name and author attribution, followed immediately by an active "
         "Target Acquisition Card prior to dispatching asynchronous investigative workers:",
         style_body
     ))
     story.append(Spacer(1, 2))
 
     startup_screen = (
-        "+=============================== [ OMNISIGHT ] ================================+\n"
+        "+============================ [ OMNISIGHT-OSINT ] =============================+\n"
         "|                                                                              |\n"
         "|   ___                  _ ____  _       _     _        ___  ____ ___ _   _    |\n"
         "|  / _ \\ _ __ ___  _ __ (_) ___|(_) __ _| |__ | |_     / _ \\/ ___|_ _| \\ | |   |\n"
@@ -316,22 +315,17 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "|  \\___/|_| |_| |_|_| |_|_|____/|_|\\__, |_| |_|\\__|    \\___/|____/___|_| \\_|   |\n"
         "|                                  |___/                                       |\n"
         "|                                                                              |\n"
-        "|  * OmniSight-OSINT - Modular Intelligence & Reconnaissance Framework *       |\n"
-        "|  [ Python 3.10+ | Async Architecture | v1.0.0 ]                              |\n"
-        "|  Author: Muhammad Inaam Kaleem                                               |\n"
-        "|  University: Riphah International University Faisalabad                      |\n"
-        "|  Specialization: Student of Cybersecurity                                    |\n"
+        "|                               OmniSight-OSINT                                |\n"
+        "|                            author = inaam kaleem                             |\n"
         "|                                                                              |\n"
-        "|  NOTICE: Strictly for educational & authorized security testing.             |\n"
-        "|  Use only on targets with prior written permission.                          |\n"
-        "+====================== [ Cyber Reconnaissance Engine ] =======================+\n"
+        "+==============================================================================+\n"
         "/------------------------------ [ SCAN INITIATED ] ----------------------------\\\n"
-        "|   * TARGET ACQUIRED                                                          |\n"
+        "|   [+] TARGET ACQUIRED                                                        |\n"
         "|                                                                              |\n"
         "|   | Type   : PHONE                                                           |\n"
         "|   | Value  : +923124398331                                                   |\n"
-        "|   | Time   : 2026-10-25 18:11:49                                             |\n"
-        "|   | Engine : OmniSight Async Pipeline v1.0                                   |\n"
+        "|   | Time   : 2026-10-25 18:30:00                                             |\n"
+        "|   | Engine : OmniSight Async Pipeline v1.0 (Linux)                           |\n"
         "|                                                                              |\n"
         "\\------------------------------------------------------------------------------/"
     )
@@ -360,7 +354,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         ],
         [
             Paragraph("<b>Presentation &amp; CLI Layer</b>", style_table_cell_bold),
-            Paragraph("<code>main.py</code>, Rich UI Tables, ASCII Banner, JSON Exporter", style_table_cell),
+            Paragraph("<code>open_osint.py</code>, Rich UI Tables, ASCII Banner, JSON Exporter", style_table_cell),
             Paragraph("Parses CLI arguments, formats neon status banners, renders dynamic telemetry tables, exports JSON reports.", style_table_cell),
         ],
         [
@@ -441,7 +435,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "                    [ ITU-T E.164 Normalization ]\n"
         "                                    |\n"
         "                     [ Check Author Target Mapping ]\n"
-        "                     +-- Found (03124398331) ---> Muhammad Inaam Kaleem\n"
+        "                     +-- Found (03124398331) ---> Inaam Kaleem\n"
         "                     |\n"
         "                     [ Check Local targets.json ]\n"
         "                     +-- Custom Target Match ---> Load Custom Owner Record\n"
@@ -755,20 +749,21 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
 
     story.append(Spacer(1, 10))
 
-    story.append(Paragraph("Rapid Installation &amp; Deployment", style_h2))
+    story.append(Paragraph("Rapid Installation &amp; Deployment (Linux)", style_h2))
     install_box = (
         "# 1. Clone Repository\n"
         "git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git\n"
         "cd OmniSight-OSINT\n\n"
-        "# 2. Initialize Virtual Environment\n"
-        "python -m venv venv\n"
-        "venv\\Scripts\\activate  # Windows (Linux: source venv/bin/activate)\n\n"
-        "# 3. Install Dependencies\n"
-        "pip install -r requirements.txt\n\n"
+        "# 2. Initialize Virtual Environment (Linux)\n"
+        "python3 -m venv venv\n"
+        "source venv/bin/activate\n\n"
+        "# 3. Install Dependencies & Make Executable\n"
+        "pip install -r requirements.txt\n"
+        "chmod +x open_osint.py\n\n"
         "# 4. Execute Target Investigation\n"
-        "python main.py --phone +923124398331\n"
-        "python main.py --ip 192.168.100.52\n"
-        "python main.py --username torvalds --output torvalds_recon.json"
+        "./open_osint.py --phone +923124398331\n"
+        "./open_osint.py --ip 192.168.100.52\n"
+        "./open_osint.py --username torvalds --output torvalds_recon.json"
     )
     story.append(Table([[Preformatted(install_box, style_code)]], colWidths=[6.5 * inch], style=[
         ("BACKGROUND", (0, 0), (-1, -1), TERM_BG),
@@ -780,9 +775,9 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Spacer(1, 10))
 
     attr_box = (
-        "<b>ACADEMIC ATTRIBUTION &amp; PROJECT GOVERNANCE:</b><br/>"
-        "OmniSight-OSINT is engineered as a defensive cyber intelligence research framework by "
-        "<b>Muhammad Inaam Kaleem</b>, Student of Cybersecurity at <b>Riphah International University Faisalabad</b>. "
+        "<b>AUTHOR ATTRIBUTION &amp; PROJECT GOVERNANCE:</b><br/>"
+        "OmniSight-OSINT is engineered as a modular cyber reconnaissance and threat intelligence framework by "
+        "<b>Inaam Kaleem</b> (<code>author = inaam kaleem</code>) for Linux environments. "
         "Licensed under the terms of the MIT Open-Source License."
     )
     attr_p = Paragraph(attr_box, ParagraphStyle("AttrStyle", parent=style_body, fontSize=8.5, leading=12, textColor=NAVY_MED))

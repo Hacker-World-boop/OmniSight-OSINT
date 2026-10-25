@@ -12,22 +12,23 @@
 ### **Modular Cyber Reconnaissance & Threat Intelligence Framework**
 *Engineered in Python 3.10+ leveraging clean architecture, asynchronous I/O (`aiohttp`, `asyncio`), Pydantic domain models, and vibrant `rich` terminal interfaces.*
 
-[Visual Diagrams](#-visual-diagrams--workflow) • [Core Architecture](#-core-architecture) • [Modules](#-intelligence-modules) • [Accuracy & Confidence](#-accuracy--confidence-metrics) • [Startup Interface Example](#-tool-startup-interface-example) • [Installation](#-installation--setup) • [Contributing](CONTRIBUTING.md)
+[Visual Diagrams](#visual-diagrams--workflow) • [Core Architecture](#core-architecture) • [Modules](#intelligence-modules) • [Accuracy & Confidence](#accuracy--confidence-metrics) • [Startup Interface Example](#tool-startup-interface-example) • [Installation](#installation--setup) • [Contributing](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## 👤 Author & Academic Information
+## Author Information
 
-- **Author:** Muhammad Inaam Kaleem  
-- **University:** Riphah International University Faisalabad  
-- **Academic Program:** Student of Cybersecurity  
-- **Project Domain:** Cyber Reconnaissance, Network Profiling, Telephony Intelligence & OSINT Automation  
+- **Tool Name:** OmniSight-OSINT (`open_osint.py`)
+- **Author:** Inaam Kaleem (`author = inaam kaleem`)
+- **Target Platform:** Linux (Debian, Ubuntu, Kali, Arch, etc.)
+- **Execution:** `./open_osint.py` or `python3 open_osint.py`
+- **Domain:** Cyber Reconnaissance, Network Profiling, Telephony Intelligence & OSINT Automation
 
 ---
 
-## ⚖️ Ethical & Legal Usage Policy
+## Ethical & Legal Usage Policy
 
 > [!WARNING]
 > **RESTRICTED TESTING NOTICE:**  
@@ -35,7 +36,7 @@
 
 ---
 
-## 📊 Visual Diagrams & Workflow
+## Visual Diagrams & Workflow
 
 ### 1. High-Level System Architecture
 The following diagram illustrates the relationship between OmniSight's CLI interface, core infrastructure, modular intelligence engines, and upstream telemetry sources:
@@ -43,7 +44,7 @@ The following diagram illustrates the relationship between OmniSight's CLI inter
 ```mermaid
 flowchart TD
     subgraph UI_Layer["User Interface & Presentation Layer"]
-        CLI["main.py (CLI Argument Parser)"]
+        CLI["open_osint.py (CLI Argument Parser)"]
         Banner["Cyberpunk ASCII Banner & Attribution"]
         ScanCard["Target Acquired Scan Card"]
         RichUI["Rich Dynamic Tables, Badges & Panels"]
@@ -107,14 +108,14 @@ The end-to-end operational sequence showing non-blocking task scheduling, parall
 sequenceDiagram
     autonumber
     actor Analyst as Security Analyst
-    participant CLI as main.py CLI
+    participant CLI as open_osint.py CLI
     participant Core as Asyncio Core Pipeline
     participant Phone as modules.phone_tracker
     participant IP as modules.ip_tracker
     participant Breach as modules.breach_hunter
     participant UI as Rich Terminal Interface
 
-    Analyst->>CLI: Execute omnisight with target argument
+    Analyst->>CLI: Execute open_osint.py with target argument
     CLI->>UI: Render Banner & Scan Initiated Card
     CLI->>Core: Initialize ClientSession & Event Loop
 
@@ -200,7 +201,7 @@ flowchart LR
     Plausibility -->|Yes| Metadata["Extract Carrier, Country & Line Type"]
 
     Metadata --> CheckAuthor{"Author / Primary Number?"}
-    CheckAuthor -->|Yes: 03124398331| AuthorRecord["Muhammad Inaam Kaleem (Verified Target)"]
+    CheckAuthor -->|Yes: 03124398331| AuthorRecord["Inaam Kaleem (Verified Target)"]
     CheckAuthor -->|No| CheckCustom{"Exists in targets.json?"}
 
     CheckCustom -->|Yes| CustomRecord["Extract Custom Owner & Registry"]
@@ -247,7 +248,7 @@ stateDiagram-v2
 
 ---
 
-## 🏛️ Core Architecture
+## Core Architecture
 
 OmniSight-OSINT is engineered using a decoupled, layered architecture adhering to SOLID design principles:
 
@@ -271,14 +272,14 @@ OmniSight-OSINT is engineered using a decoupled, layered architecture adhering t
 - **Data Validation & Sanitization:** Enforces data integrity before visualization, ensuring null-safety across all UI presentation layers.
 - **Deterministic Serialization:** Direct export support via `model.model_dump()` guaranteeing RFC-8259 compliant JSON export artifacts.
 
-### 5. CLI Presentation & Error Boundaries (`main.py`)
+### 5. CLI Presentation & Error Boundaries (`open_osint.py`)
 - **Rich Terminal Engine:** Neon cyberpunk palette leveraging Rich's `Table`, `Panel`, `Text`, `Rule`, and `box.DOUBLE` primitives.
 - **Signal Handling:** Intercepts `SIGINT` (Ctrl+C) cleanly, terminating in-flight coroutines and returning UNIX exit code `130` without uncaught keyboard interrupt dumps.
-- **Output Streaming:** Reconfigures Windows terminal stdout/stderr to UTF-8 stream mode with character replacement fallbacks to guarantee cross-platform rendering of icons and box-drawing glyphs.
+- **Linux Terminal Integration:** Engineered for modern Linux terminal emulators, leveraging UTF-8 streams, ANSI neon gradients, and box-drawing primitives without emoji dependencies.
 
 ---
 
-## 🧩 Intelligence Modules
+## Intelligence Modules
 
 ```
 modules/
@@ -320,7 +321,7 @@ modules/
 
 ---
 
-## 🎯 Accuracy & Confidence Metrics
+## Accuracy & Confidence Metrics
 
 OmniSight-OSINT enforces clear operational accuracy standards and confidence ratings across all gathering modules:
 
@@ -365,49 +366,38 @@ Target phone number ownership resolution evaluates multiple heuristics to comput
 
 ---
 
-## 🖥️ Tool Startup Interface Example
+## Tool Startup Interface Example
 
-When executing OmniSight-OSINT, the terminal renders the cyber reconnaissance banner alongside the active target acquisition card before dispatching asynchronous investigative routines:
+When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal renders the cyber reconnaissance banner alongside the active target acquisition card before dispatching asynchronous investigative routines:
 
 ```text
-╔═══════════════════════════════ ◈ OMNISIGHT ◈ ════════════════════════════════╗
+╔══════════════════════════════ [ OMNISIGHT-OSINT ] ═══════════════════════════╗
 ║                                                                              ║
-║  ___                  _ ____  _       _     _        ___  ____ ___ _   _     ║
-║  _____                                                                       ║
-║   / _ \ _ __ ___  _ __ (_) ___|(_) __ _| |__ | |_     / _ \/ ___|_ _| \ |    ║
-║  |_   _|                                                                     ║
+║    ___                  _ ____  _       _     _        ___  ____ ___ _   _   ║
+║   / _ \ _ __ ___  _ __ (_) ___|(_) __ _| |__ | |_     / _ \/ ___|_ _| \ | |  ║
 ║  | | | | '_ ` _ \| '_ \| \___ \| |/ _` | '_ \| __|---| | | \___ \| ||  \| |  ║
-║  | |                                                                         ║
-║  | |_| | | | | | | | | | |___) | | (_| | | | | |_ |---| |_| |___) | || |\    ║
-║  | | |                                                                       ║
+║  | |_| | | | | | | | | | |___) | | (_| | | | | |_ |---| |_| |___) | || |\  |  ║
 ║   \___/|_| |_| |_|_| |_|_|____/|_|\__, |_| |_|\__|    \___/|____/___|_| \_|  ║
-║  |_|                                                                         ║
 ║                                   |___/                                      ║
 ║                                                                              ║
-║  ⚡ OmniSight-OSINT — Modular Intelligence & Reconnaissance Framework ⚡     ║
-║  [ Python 3.10+ | Async Architecture | v1.0.0 ]                              ║
-║  👤 Author: Muhammad Inaam Kaleem                                            ║
-║  🎓 University: Riphah International University Faisalabad                   ║
-║  🛡️  Specialization: Student of Cybersecurity                                ║
+║                               OmniSight-OSINT                                ║
+║                            author = inaam kaleem                             ║
 ║                                                                              ║
-║  ⚖️  NOTICE: Strictly for educational & authorized security testing.         ║
-║     Use only on targets with prior written permission.                       ║
-║                                                                              ║
-╚══════════════════════ [ Cyber Reconnaissance Engine ] ═══════════════════════╝
-╭────────────────────────────── ◉ SCAN INITIATED ──────────────────────────────╮
-│   🎯 TARGET ACQUIRED                                                         │
+╚══════════════════════════════════════════════════════════════════════════════╝
+╭────────────────────────────── [ SCAN INITIATED ] ────────────────────────────╮
+│   [+] TARGET ACQUIRED                                                        │
 │                                                                              │
-│   ┃ Type   : PHONE                                                           │
-│   ┃ Value  : +923124398331                                                   │
-│   ┃ Time   : 2026-10-25 18:11:49                                             │
-│   ┃ Engine : OmniSight Async Pipeline v1.0                                   │
+│   | Type   : PHONE                                                           │
+│   | Value  : +923124398331                                                   │
+│   | Time   : 2026-10-25 18:30:00                                             │
+│   | Engine : OmniSight Async Pipeline v1.0 (Linux)                           │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ---
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
@@ -415,13 +405,8 @@ git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
 cd OmniSight-OSINT
 ```
 
-### 2. Set Up Virtual Environment (Recommended)
+### 2. Set Up Virtual Environment (Linux)
 ```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Linux / macOS
 python3 -m venv venv
 source venv/bin/activate
 ```
@@ -431,16 +416,36 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Optional: Configure API Keys
+### 4. Make open_osint.py Executable
+```bash
+chmod +x open_osint.py
+```
+
+### 5. Optional: Configure API Keys
 ```bash
 cp .env.example .env
 # Edit .env with your optional keys (IPinfo, HaveIBeenPwned, etc.)
 # OmniSight functions fully out-of-the-box even without external API keys!
 ```
 
+### 6. Run Reconnaissance
+```bash
+# Telephony intelligence & subscriber ownership lookup
+./open_osint.py --phone +923124398331
+
+# Dual-mode IP reconnaissance (Public WAN or Private LAN)
+./open_osint.py --ip 8.8.8.8
+
+# Multi-platform username enumeration & breach audit
+./open_osint.py --username targetuser
+
+# Export findings to JSON artifact
+./open_osint.py --phone +923124398331 --output report.json
+```
+
 ---
 
-## 🛠️ Command-Line Arguments Reference
+## Command-Line Arguments Reference
 
 | Option | Type | Required | Description |
 |---|---|---|---|
@@ -455,7 +460,7 @@ cp .env.example .env
 
 ---
 
-## 📤 Push to Your GitHub
+## Push to Your GitHub
 
 To upload this repository to your GitHub account:
 
@@ -467,13 +472,13 @@ git init
 git add .
 
 # 3. Create commit
-git commit -m "docs: comprehensive architecture, modules, accuracy and workflow documentation"
+git commit -m "feat: open_osint.py entry point, Linux support, and modular OSINT architecture"
 
 # 4. Rename main branch
 git branch -M main
 
 # 5. Link to your GitHub repository
-git remote add origin https://github.com/YOUR_USERNAME/OmniSight-OSINT.git
+git remote add origin https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
 
 # 6. Push code to GitHub
 git push -u origin main
@@ -481,11 +486,9 @@ git push -u origin main
 
 ---
 
-## 🎓 Academic Attribution
+## License & Attribution
 
-- **Project:** OmniSight-OSINT Framework  
-- **Lead Developer:** Muhammad Inaam Kaleem  
-- **Institution:** Riphah International University Faisalabad  
-- **Field of Study:** Cybersecurity & Information Assurance  
-- **Status:** Production-Ready Modular OSINT Tool  
+- **Tool Name:** OmniSight-OSINT (`open_osint.py`)
+- **Author:** Inaam Kaleem (`author = inaam kaleem`)
+- **Target Platform:** Linux Only
 - **License:** [MIT License](LICENSE)

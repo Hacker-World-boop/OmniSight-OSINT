@@ -77,7 +77,7 @@ def resolve_subscriber_identity(
     # 1. Author and Primary Project Target Mapping
     if clean_digits.endswith("923124398331") or clean_digits == "03124398331" or clean_digits == "3124398331":
         return (
-            "Muhammad Inaam Kaleem",
+            "Inaam Kaleem",
             "CMPak / Zong Cellular Telecommunications",
             "CNAM Telecom Subscriber Registry / Truecaller Verified",
             "Active / In-Service (Primary Line)",
