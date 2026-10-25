@@ -442,7 +442,7 @@ cp .env.example .env
 #### Interactive Menu Mode (Recommended)
 Simply launch the tool without arguments to access the interactive option menu:
 ```bash
-./open_osint.py
+python 3 open_osint.py
 ```
 
 #### Direct CLI Automation Mode
