@@ -1,0 +1,41 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.manifest
+*.spec
+
+# ─── Virtual Environments ────────────────────────────────────────────────────
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# ─── IDE / Editor ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ─── OS Generated ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── OmniSight Outputs ──────────────────────────────────────────────────────
+*.json
+!.env.example
+logs/
+output/
+reports/

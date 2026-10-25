@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnisight-osint"
+version = "1.0.0"
+description = "OmniSight-OSINT: Automated Modular Cyber Reconnaissance & Threat Intelligence CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Muhammad Inaam Kaleem", email = "author@omnisight.local" }
+]
+keywords = ["osint", "cybersecurity", "reconnaissance", "threat-intelligence", "terminal-ui", "python"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+]
+dependencies = [
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.7.0",
+    "requests>=2.31.0",
+    "aiohttp>=3.9.0",
+    "phonenumbers>=8.13.0"
+]
+
+[project.scripts]
+omnisight = "main:main"
+
+[project.urls]
+Homepage = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT"
+Repository = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT"
+"Bug Tracker" = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT/issues"
