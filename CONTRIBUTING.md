@@ -6,7 +6,7 @@ Thank you for your interest in contributing to **OmniSight-OSINT**!
 
 ### 1. Fork & Clone
 ```bash
-git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
+git clone https://github.com/Hacker-World-boop/OmniSight-OSINT.git
 cd OmniSight-OSINT
 ```
 

@@ -410,7 +410,7 @@ When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal render
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
+git clone https://github.com/Hacker-World-boop/OmniSight-OSINT.git
 cd OmniSight-OSINT
 ```
 
@@ -496,7 +496,7 @@ git commit -m "feat: open_osint.py entry point, Linux support, and modular OSINT
 git branch -M main
 
 # 5. Link to your GitHub repository
-git remote add origin https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git
+git remote add origin https://github.com/Hacker-World-boop/OmniSight-OSINT.git
 
 # 6. Push code to GitHub
 git push -u origin main

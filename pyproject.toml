@@ -42,6 +42,6 @@ open_osint = "open_osint:main"
 omnisight = "open_osint:main"
 
 [project.urls]
-Homepage = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT"
-Repository = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT"
-"Bug Tracker" = "https://github.com/MuhammadInaamKaleem/OmniSight-OSINT/issues"
+Homepage = "https://github.com/Hacker-World-boop/OmniSight-OSINT"
+Repository = "https://github.com/Hacker-World-boop/OmniSight-OSINT"
+"Bug Tracker" = "https://github.com/Hacker-World-boop/OmniSight-OSINT/issues"

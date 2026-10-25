@@ -748,7 +748,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Paragraph("Rapid Installation &amp; Deployment (Linux)", style_h2))
     install_box = (
         "# 1. Clone Repository\n"
-        "git clone https://github.com/MuhammadInaamKaleem/OmniSight-OSINT.git\n"
+        "git clone https://github.com/Hacker-World-boop/OmniSight-OSINT.git\n"
         "cd OmniSight-OSINT\n\n"
         "# 2. Initialize Virtual Environment (Linux)\n"
         "python3 -m venv venv\n"
