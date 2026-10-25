@@ -44,9 +44,9 @@ The following diagram illustrates the relationship between OmniSight's CLI inter
 ```mermaid
 flowchart TD
     subgraph UI_Layer["User Interface & Presentation Layer"]
-        CLI["open_osint.py (CLI Argument Parser)"]
+        CLI["open_osint.py (CLI & Interactive Menu Parser)"]
         Banner["Cyberpunk ASCII Banner & Attribution"]
-        ScanCard["Target Acquired Scan Card"]
+        Menu["Interactive Module Selection Menu (1-5)"]
         RichUI["Rich Dynamic Tables, Badges & Panels"]
         Divider["Styled Section Dividers"]
         CompleteCard["Scan Complete Footer"]
@@ -115,8 +115,8 @@ sequenceDiagram
     participant Breach as modules.breach_hunter
     participant UI as Rich Terminal Interface
 
-    Analyst->>CLI: Execute open_osint.py with target argument
-    CLI->>UI: Render Banner & Scan Initiated Card
+    Analyst->>CLI: Launch open_osint.py (Interactive or CLI Flag)
+    CLI->>UI: Render Banner & Interactive Menu Options
     CLI->>Core: Initialize ClientSession & Event Loop
 
     alt Target is Telephone Number (--phone)
@@ -200,10 +200,7 @@ flowchart LR
     Plausibility -->|No| InvalidErr["Return Plausible / Syntax Warning"]
     Plausibility -->|Yes| Metadata["Extract Carrier, Country & Line Type"]
 
-    Metadata --> CheckAuthor{"Author / Primary Number?"}
-    CheckAuthor -->|Yes: 03124398331| AuthorRecord["Inaam Kaleem (Verified Target)"]
-    CheckAuthor -->|No| CheckCustom{"Exists in targets.json?"}
-
+    Metadata --> CheckCustom{"Exists in targets.json?"}
     CheckCustom -->|Yes| CustomRecord["Extract Custom Owner & Registry"]
     CheckCustom -->|No| DeterministicCNAM["Deterministic Regional CNAM Resolver"]
 
@@ -212,8 +209,7 @@ flowchart LR
     RegionalPool --> GenOwner["Generate Subscriber Name & Telco Registry"]
     GenOwner --> PortCheck["Calculate MNP Portability & Confidence Score"]
 
-    AuthorRecord --> VIPCard["Render VIP Verified Subscriber Ownership Card"]
-    CustomRecord --> VIPCard
+    CustomRecord --> VIPCard["Render Verified Subscriber Ownership Card"]
     PortCheck --> VIPCard
 
     VIPCard --> DorkGen["Generate 6 OSINT Investigation Dork Links"]
@@ -345,7 +341,6 @@ Target phone number ownership resolution evaluates multiple heuristics to comput
 
 | Target Category | Confidence Score | Resolution Mechanism | Verification Source |
 |---|---|---|---|
-| **Primary Project Target / Author** | **99% (Verified)** | Hardened author mapping & primary registry | CNAM Telecom Subscriber Registry / Truecaller Verified |
 | **Custom Database Entry (`targets.json`)** | **100% (Custom)** | Exact match in user-supplied local target file | Local Target Intelligence Database |
 | **Deterministic CNAM Resolution** | **90% – 98%** | Regional name pool seeded by E.164 digit hash | CNAM Telecom Telephony Exchange / Directory Heuristic |
 | **E.164 Format & Allocation** | **100% Compliant** | Google `libphonenumber` ITU-T standard validation | Official International Numbering Plans |
@@ -368,7 +363,7 @@ Target phone number ownership resolution evaluates multiple heuristics to comput
 
 ## Tool Startup Interface Example
 
-When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal renders the cyber reconnaissance banner alongside the active target acquisition card before dispatching asynchronous investigative routines:
+When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal renders the cyber reconnaissance banner alongside the interactive module selection menu, prompting the user for their desired investigative task:
 
 ```text
 ╔══════════════════════════════ [ OMNISIGHT-OSINT ] ═══════════════════════════╗
@@ -384,15 +379,29 @@ When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal render
 ║                            author = inaam kaleem                             ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
-╭────────────────────────────── [ SCAN INITIATED ] ────────────────────────────╮
-│   [+] TARGET ACQUIRED                                                        │
-│                                                                              │
-│   | Type   : PHONE                                                           │
-│   | Value  : +923124398331                                                   │
-│   | Time   : 2026-10-25 18:30:00                                             │
-│   | Engine : OmniSight Async Pipeline v1.0 (Linux)                           │
-│                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────╯
+
+                       [ OSINT RECONNAISSANCE MODULES ]                        
++-----------------------------------------------------------------------------+
+|   Option   |  Reconnaissance Mode         |  Capabilities & Intelligence    |
+|            |                              |  Scope                          |
+|------------+------------------------------+---------------------------------|
+|    [1]     |  Username Info               |  Probe 13+ digital platforms,   |
+|            |                              |  measure latency & query        |
+|            |                              |  breach dumps                   |
+|    [2]     |  Phone Number Info           |  E.164 normalization, carrier   |
+|            |                              |  classification & subscriber    |
+|            |                              |  ownership                      |
+|    [3]     |  IP Address Info             |  Dual-mode WAN geolocation,     |
+|            |                              |  ASN prefix, PTR lookup & LAN   |
+|            |                              |  heuristics                     |
+|    [4]     |  Email Address Info          |  Data breach auditing,          |
+|            |                              |  compromised records &          |
+|            |                              |  credential exposure            |
+|    [5]     |  Exit OmniSight-OSINT        |  Terminate session and return   |
+|            |                              |  to shell                       |
++-----------------------------------------------------------------------------+
+
+[?] Select option [1-5]: 
 ```
 
 ---
@@ -429,9 +438,18 @@ cp .env.example .env
 ```
 
 ### 6. Run Reconnaissance
+
+#### Interactive Menu Mode (Recommended)
+Simply launch the tool without arguments to access the interactive option menu:
+```bash
+./open_osint.py
+```
+
+#### Direct CLI Automation Mode
+Pass targets directly via command-line flags for automation pipelines or scripting:
 ```bash
 # Telephony intelligence & subscriber ownership lookup
-./open_osint.py --phone +923124398331
+./open_osint.py --phone +14155552671
 
 # Dual-mode IP reconnaissance (Public WAN or Private LAN)
 ./open_osint.py --ip 8.8.8.8
@@ -440,19 +458,19 @@ cp .env.example .env
 ./open_osint.py --username targetuser
 
 # Export findings to JSON artifact
-./open_osint.py --phone +923124398331 --output report.json
+./open_osint.py --phone +14155552671 --output report.json
 ```
 
 ---
 
 ## Command-Line Arguments Reference
 
-| Option | Type | Required | Description |
+| Option | Type | Mode | Description |
 |---|---|---|---|
-| `--phone` | String | Mutually Exclusive | Target telephone number (E.164 format, e.g. `+923124398331`) with subscriber ownership resolution |
-| `--ip` | String | Mutually Exclusive | Target IPv4/IPv6 or private RFC-1918 LAN address |
-| `--username` | String | Mutually Exclusive | Target username handle for platform sweeps & breach auditing |
-| `--email` | String | Mutually Exclusive | Target email address for breach exposure assessment |
+| `--phone` | String | CLI Flag | Target telephone number (E.164 format, e.g. `+14155552671`) with subscriber ownership resolution |
+| `--ip` | String | CLI Flag | Target IPv4/IPv6 or private RFC-1918 LAN address |
+| `--username` | String | CLI Flag | Target username handle for platform sweeps & breach auditing |
+| `--email` | String | CLI Flag | Target email address for breach exposure assessment |
 | `--output`, `-o` | File Path | Optional | Export intelligence payload to structured JSON file |
 | `--concurrency`, `-c` | Integer | Optional | Max asynchronous workers (default: 15) |
 | `--verbose`, `-v` | Flag | Optional | Enable verbose debug logging messages |

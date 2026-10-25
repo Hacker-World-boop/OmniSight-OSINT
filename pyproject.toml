@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "omnisight-osint"
-version = "1.0.0"
+version = "1.1.0"
 description = "OmniSight-OSINT: Automated Modular Cyber Reconnaissance & Threat Intelligence CLI"
 readme = "README.md"
 requires-python = ">=3.10"

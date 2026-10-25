@@ -104,7 +104,7 @@ class NumberedCanvas(canvas.Canvas):
         self.drawString(54, 11 * inch - 36, "OMNISIGHT-OSINT  |  Technical Architecture & System Documentation")
         self.setFont(FONT_SANS, 8)
         self.setFillColor(colors.gray)
-        self.drawRightString(8.5 * inch - 54, 11 * inch - 36, "v1.0.0 -- Production Edition")
+        self.drawRightString(8.5 * inch - 54, 11 * inch - 36, "v1.1.0 -- Production Edition")
 
         self.setStrokeColor(GRAY_BORDER)
         self.setLineWidth(0.75)
@@ -243,7 +243,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(HRFlowable(width="90%", thickness=2.5, color=CYAN_ACCENT, spaceBefore=4, spaceAfter=16))
 
     cover_table_data = [
-        [Paragraph("<b>Document Classification</b>", style_table_cell_bold), Paragraph("Technical Architecture &amp; System Documentation (v1.0.0)", style_table_cell)],
+        [Paragraph("<b>Document Classification</b>", style_table_cell_bold), Paragraph("Technical Architecture &amp; System Documentation (v1.1.0)", style_table_cell)],
         [Paragraph("<b>Tool Name</b>", style_table_cell_bold), Paragraph("<b>OmniSight-OSINT (open_osint.py)</b>", style_table_cell)],
         [Paragraph("<b>Author</b>", style_table_cell_bold), Paragraph("<b>inaam kaleem</b>", style_table_cell)],
         [Paragraph("<b>Target Platform</b>", style_table_cell_bold), Paragraph("Linux Only (POSIX / Debian / Ubuntu / Kali / Arch)", style_table_cell)],
@@ -299,8 +299,8 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
 
     story.append(Paragraph(
         "Upon execution on Linux (<code>./open_osint.py</code>), <b>OmniSight-OSINT</b> initializes with a clean terminal header "
-        "displaying the tool name and author attribution, followed immediately by an active "
-        "Target Acquisition Card prior to dispatching asynchronous investigative workers:",
+        "displaying the tool name and author attribution, followed immediately by an interactive module selection menu "
+        "empowering the operator to select their desired investigative scope:",
         style_body
     ))
     story.append(Spacer(1, 2))
@@ -319,15 +319,14 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "|                            author = inaam kaleem                             |\n"
         "|                                                                              |\n"
         "+==============================================================================+\n"
-        "/------------------------------ [ SCAN INITIATED ] ----------------------------\\\n"
-        "|   [+] TARGET ACQUIRED                                                        |\n"
-        "|                                                                              |\n"
-        "|   | Type   : PHONE                                                           |\n"
-        "|   | Value  : +923124398331                                                   |\n"
-        "|   | Time   : 2026-10-25 18:30:00                                             |\n"
-        "|   | Engine : OmniSight Async Pipeline v1.0 (Linux)                           |\n"
-        "|                                                                              |\n"
-        "\\------------------------------------------------------------------------------/"
+        "|                       [ OSINT RECONNAISSANCE MODULES ]                       |\n"
+        "|   [1] Username Info     : Sweep 13+ digital platforms & breach dumps         |\n"
+        "|   [2] Phone Number Info : E.164 normalization, carrier & ownership           |\n"
+        "|   [3] IP Address Info   : Dual-mode WAN geolocation, ASN prefix & LAN        |\n"
+        "|   [4] Email Address Info: Compromised database search & credential leakage   |\n"
+        "|   [5] Exit OmniSight    : Terminate execution and return to shell            |\n"
+        "+------------------------------------------------------------------------------+\n"
+        "[?] Select option [1-5]:"
     )
 
     term_table = Table([[Preformatted(startup_screen, style_code)]], colWidths=[6.5 * inch])
@@ -434,15 +433,12 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "                                    |\n"
         "                    [ ITU-T E.164 Normalization ]\n"
         "                                    |\n"
-        "                     [ Check Author Target Mapping ]\n"
-        "                     +-- Found (03124398331) ---> Inaam Kaleem\n"
-        "                     |\n"
         "                     [ Check Local targets.json ]\n"
-        "                     +-- Custom Target Match ---> Load Custom Owner Record\n"
+        "                     +-- Custom Match ---> Load Target Owner Profile\n"
         "                     |\n"
         "                     [ Deterministic CNAM Identity Engine ]\n"
         "                     * SHA-256 Digest of digits ---> Regional Name Pools\n"
-        "                     * Country-aware pools: PK, US, UK, IN, AE, Global\n"
+        "                     * Country-aware pools: US, PK, GB, IN, CA, AE, SA\n"
         "                     * Derive MNP Portability & Confidence (90-98%)\n"
         "                                    |\n"
         "                                    v\n"
@@ -688,7 +684,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
             Paragraph("<code>--phone &lt;NUMBER&gt;</code>", style_table_cell_bold),
             Paragraph("String", style_table_cell),
             Paragraph("Exclusive Target", style_table_cell),
-            Paragraph("Target phone number (e.g. <code>+923124398331</code>). Performs E.164 parsing, subscriber ownership resolution, and reverse lookup dork generation.", style_table_cell),
+            Paragraph("Target phone number (e.g. <code>+14155552671</code>). Performs E.164 parsing, subscriber ownership resolution, and reverse lookup dork generation.", style_table_cell),
         ],
         [
             Paragraph("<code>--ip &lt;ADDRESS&gt;</code>", style_table_cell_bold),
@@ -760,9 +756,11 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "# 3. Install Dependencies & Make Executable\n"
         "pip install -r requirements.txt\n"
         "chmod +x open_osint.py\n\n"
-        "# 4. Execute Target Investigation\n"
-        "./open_osint.py --phone +923124398331\n"
-        "./open_osint.py --ip 192.168.100.52\n"
+        "# 4. Launch Interactive Menu (Recommended)\n"
+        "./open_osint.py\n\n"
+        "# 5. Direct CLI Automation Mode\n"
+        "./open_osint.py --phone +14155552671\n"
+        "./open_osint.py --ip 8.8.8.8\n"
         "./open_osint.py --username torvalds --output torvalds_recon.json"
     )
     story.append(Table([[Preformatted(install_box, style_code)]], colWidths=[6.5 * inch], style=[

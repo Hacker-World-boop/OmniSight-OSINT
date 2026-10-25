@@ -74,18 +74,7 @@ def resolve_subscriber_identity(
     Returns:
         Tuple of (owner_name, carrier_registered, caller_id_source, line_status, portability_status, confidence_score).
     """
-    # 1. Author and Primary Project Target Mapping
-    if clean_digits.endswith("923124398331") or clean_digits == "03124398331" or clean_digits == "3124398331":
-        return (
-            "Inaam Kaleem",
-            "CMPak / Zong Cellular Telecommunications",
-            "CNAM Telecom Subscriber Registry / Truecaller Verified",
-            "Active / In-Service (Primary Line)",
-            "Original Carrier (Non-Ported)",
-            "99% (Author / Verified Target)"
-        )
-
-    # 2. Check Optional Local Target Database (targets.json)
+    # 1. Check Optional Local Target Database (targets.json)
     for candidate_path in ["targets.json", "target_directory.json"]:
         p = Path(candidate_path)
         if p.is_file():

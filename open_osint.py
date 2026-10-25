@@ -113,28 +113,6 @@ def render_section_divider(title: str, color: str = "#00E5FF") -> None:
     console.print()
 
 
-def render_scan_header(target_type: str, target_value: str) -> None:
-    """Display a pre-scan target acquisition header without emojis."""
-    header = Text()
-    header.append("  [+] TARGET ACQUIRED\n\n", style=f"bold {HOT_PINK}")
-    header.append("  | Type   : ", style="dim white")
-    header.append(f"{target_type.upper()}\n", style=f"bold {NEON_GREEN}")
-    header.append("  | Value  : ", style="dim white")
-    header.append(f"{target_value}\n", style=f"bold {GOLD}")
-    header.append("  | Time   : ", style="dim white")
-    header.append(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n", style=f"bold {SKY_BLUE}")
-    header.append("  | Engine : ", style="dim white")
-    header.append("OmniSight Async Pipeline v1.0 (Linux)\n", style=f"bold {VIOLET}")
-
-    panel = Panel(
-        header,
-        border_style=f"bold {HOT_PINK}",
-        box=box.ROUNDED,
-        title=f"[bold {HOT_PINK}][ SCAN INITIATED ][/bold {HOT_PINK}]",
-    )
-    console.print(panel)
-
-
 def render_scan_complete(target_type: str) -> None:
     """Display a post-scan completion footer without emojis."""
     footer = Text()
@@ -518,23 +496,154 @@ def export_report_json(report: TargetIntelligenceReport, output_path: str) -> No
         console.print(f"\n[bold red]Failed to export JSON report to '{output_path}': {exc}[/bold red]")
 
 
+def render_report(report: TargetIntelligenceReport, output_path: Optional[str] = None) -> None:
+    """Render dynamic visual tables and optional JSON export for an acquired report."""
+    if report.target_type == "ip":
+        render_section_divider("NETWORK GEOLOCATION & IP TELEMETRY", ELECTRIC_CYAN)
+        display_ip_results(report)
+    elif report.target_type == "phone":
+        render_section_divider("TELEPHONY & SUBSCRIBER INTELLIGENCE", MAGENTA)
+        display_phone_results(report)
+    elif report.target_type == "username":
+        render_section_divider("MULTI-PLATFORM PRESENCE RECONNAISSANCE", ELECTRIC_CYAN)
+        display_username_results(report)
+        render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
+        display_breach_results(report)
+    elif report.target_type == "email":
+        render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
+        display_breach_results(report)
+        render_section_divider("PLATFORM HANDLE RECONNAISSANCE", ELECTRIC_CYAN)
+        display_username_results(report)
+
+    # Render scan completion badge
+    render_scan_complete(report.target_type)
+
+    # Export structured JSON artifact if requested
+    if output_path:
+        export_report_json(report, output_path)
+
+
+def render_interactive_menu() -> None:
+    """Render the interactive selection menu with numbered options."""
+    menu_table = Table(
+        show_header=True,
+        header_style=f"bold {ELECTRIC_CYAN}",
+        box=box.ROUNDED,
+        border_style=f"bold {ELECTRIC_CYAN}",
+        title=f"[bold {MAGENTA}][ OSINT RECONNAISSANCE MODULES ][/bold {MAGENTA}]",
+        padding=(0, 2),
+    )
+    menu_table.add_column("Option", style=f"bold {GOLD}", justify="center", width=8)
+    menu_table.add_column("Reconnaissance Mode", style=f"bold {NEON_GREEN}", width=26)
+    menu_table.add_column("Capabilities & Intelligence Scope", style="dim white")
+
+    menu_table.add_row("[1]", "Username Info", "Probe 13+ digital platforms, measure latency & query breach dumps")
+    menu_table.add_row("[2]", "Phone Number Info", "E.164 normalization, carrier classification & subscriber ownership")
+    menu_table.add_row("[3]", "IP Address Info", "Dual-mode WAN geolocation, ASN prefix, PTR lookup & LAN heuristics")
+    menu_table.add_row("[4]", "Email Address Info", "Data breach auditing, compromised records & credential exposure")
+    menu_table.add_row("[5]", "Exit OmniSight-OSINT", "Terminate session and return to shell")
+
+    console.print()
+    console.print(menu_table)
+    console.print()
+
+
+def run_interactive_mode(args: argparse.Namespace) -> None:
+    """Run interactive menu mode allowing user to pick options and enter targets."""
+    while True:
+        render_interactive_menu()
+        try:
+            choice = console.input(f"[bold {ELECTRIC_CYAN}][?] Select option [1-5]: [/bold {ELECTRIC_CYAN}]").strip()
+        except (KeyboardInterrupt, EOFError):
+            console.print(f"\n[dim cyan][*] Session ended by user. Exiting.[/dim cyan]")
+            break
+
+        if choice in ("5", "q", "quit", "exit"):
+            console.print(f"\n[bold {ELECTRIC_CYAN}][*] Exiting OmniSight-OSINT. Stay secure.[/bold {ELECTRIC_CYAN}]\n")
+            break
+
+        if choice not in ("1", "2", "3", "4"):
+            console.print(f"[bold {HOT_PINK}][-] Invalid selection '{choice}'. Please enter 1, 2, 3, 4, or 5.[/bold {HOT_PINK}]\n")
+            continue
+
+        target_val = ""
+        target_field = ""
+
+        try:
+            if choice == "1":
+                target_field = "username"
+                target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target username: [/bold {NEON_GREEN}]").strip()
+            elif choice == "2":
+                target_field = "phone"
+                target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target phone number (e.g. +14155552671): [/bold {NEON_GREEN}]").strip()
+            elif choice == "3":
+                target_field = "ip"
+                target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target IP address (e.g. 8.8.8.8 or 192.168.1.1): [/bold {NEON_GREEN}]").strip()
+            elif choice == "4":
+                target_field = "email"
+                target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target email address (e.g. user@example.com): [/bold {NEON_GREEN}]").strip()
+
+            if not target_val:
+                console.print(f"[bold {HOT_PINK}][-] Error: Target value cannot be empty.[/bold {HOT_PINK}]\n")
+                continue
+
+            export_prompt = console.input(f"[dim white][?] Export findings to JSON file? (Press Enter to skip, or enter filename): [/dim white]").strip()
+            output_file = export_prompt if export_prompt else None
+
+        except (KeyboardInterrupt, EOFError):
+            console.print(f"\n[dim cyan][*] Operation cancelled by user.[/dim cyan]")
+            continue
+
+        # Prepare invocation arguments
+        run_args = argparse.Namespace(
+            ip=target_val if target_field == "ip" else None,
+            phone=target_val if target_field == "phone" else None,
+            username=target_val if target_field == "username" else None,
+            email=target_val if target_field == "email" else None,
+            output=output_file,
+            concurrency=args.concurrency,
+            verbose=args.verbose,
+            no_banner=True
+        )
+
+        try:
+            report = asyncio.run(execute_investigation(run_args))
+            render_report(report, output_file)
+        except KeyboardInterrupt:
+            console.print(f"\n[bold {GOLD}][!] Investigation halted by user (SIGINT).[/{GOLD}]")
+        except Exception as exc:
+            console.print(f"\n[bold {HOT_PINK}][-] Investigation failure: {exc}[/{HOT_PINK}]")
+
+        try:
+            again = console.input(f"\n[bold {GOLD}][?] Perform another investigation? [Y/n]: [/bold {GOLD}]").strip().lower()
+            if again in ("n", "no", "q", "quit", "exit"):
+                console.print(f"\n[bold {ELECTRIC_CYAN}][*] Exiting OmniSight-OSINT. Stay secure.[/bold {ELECTRIC_CYAN}]\n")
+                break
+        except (KeyboardInterrupt, EOFError):
+            console.print(f"\n[bold {ELECTRIC_CYAN}][*] Exiting OmniSight-OSINT. Stay secure.[/bold {ELECTRIC_CYAN}]\n")
+            break
+
+
 def parse_arguments() -> argparse.ArgumentParser:
     """Build and configure the command-line argument parser."""
     parser = argparse.ArgumentParser(
         prog="open_osint",
-        description="OmniSight-OSINT: Automated Modular Cyber Reconnaissance & Threat Intelligence CLI (Linux)",
+        description="OmniSight-OSINT v1.1.0: Automated Modular Cyber Reconnaissance & Threat Intelligence CLI (Linux)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "Examples:\n"
-            "  python3 open_osint.py --phone +923124398331\n"
+            "Interactive Mode:\n"
+            "  Run without options to launch the interactive selection menu:\n"
+            "    ./open_osint.py\n\n"
+            "Direct CLI Mode:\n"
+            "  python3 open_osint.py --phone +14155552671\n"
             "  python3 open_osint.py --ip 8.8.8.8\n"
             "  python3 open_osint.py --username torvalds --output torvalds_recon.json\n"
             "  python3 open_osint.py --email admin@example.com --output breach_report.json\n"
         )
     )
 
-    # Mutually Exclusive Target Group (Single Target Requirement)
-    target_group = parser.add_mutually_exclusive_group(required=True)
+    # Mutually Exclusive Target Group (Optional for direct CLI mode; launches interactive menu if omitted)
+    target_group = parser.add_mutually_exclusive_group(required=False)
     target_group.add_argument(
         "--ip",
         type=str,
@@ -543,7 +652,7 @@ def parse_arguments() -> argparse.ArgumentParser:
     target_group.add_argument(
         "--phone",
         type=str,
-        help="Target telephone number (E.164 format, e.g. +923124398331) for carrier and subscriber analysis."
+        help="Target telephone number (E.164 format, e.g. +14155552671) for carrier and subscriber analysis."
     )
     target_group.add_argument(
         "--username",
@@ -596,45 +705,20 @@ def main() -> None:
     if not args.no_banner:
         render_banner()
 
-    # Determine target type and value for pre-scan card
-    target_type = "ip" if args.ip else "phone" if args.phone else "username" if args.username else "email"
-    target_val = args.ip or args.phone or args.username or args.email
-    render_scan_header(target_type, target_val)
-
-    # Execute async pipeline
-    try:
-        report = asyncio.run(execute_investigation(args))
-    except KeyboardInterrupt:
-        console.print(f"\n[bold {GOLD}]Investigation halted by user (SIGINT).[/{GOLD}]")
-        sys.exit(130)
-    except Exception as exc:
-        console.print(f"\n[bold {HOT_PINK}]Critical pipeline failure: {exc}[/{HOT_PINK}]")
-        sys.exit(1)
-
-    # Render Visual Tables based on Target Type with Section Dividers
-    if report.target_type == "ip":
-        render_section_divider("NETWORK GEOLOCATION & IP TELEMETRY", ELECTRIC_CYAN)
-        display_ip_results(report)
-    elif report.target_type == "phone":
-        render_section_divider("TELEPHONY & SUBSCRIBER INTELLIGENCE", MAGENTA)
-        display_phone_results(report)
-    elif report.target_type == "username":
-        render_section_divider("MULTI-PLATFORM PRESENCE RECONNAISSANCE", ELECTRIC_CYAN)
-        display_username_results(report)
-        render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
-        display_breach_results(report)
-    elif report.target_type == "email":
-        render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
-        display_breach_results(report)
-        render_section_divider("PLATFORM HANDLE RECONNAISSANCE", ELECTRIC_CYAN)
-        display_username_results(report)
-
-    # Render scan completion badge
-    render_scan_complete(report.target_type)
-
-    # Export structured JSON artifact if requested
-    if args.output:
-        export_report_json(report, args.output)
+    # If any target CLI argument is supplied, execute directly in CLI mode
+    if args.ip or args.phone or args.username or args.email:
+        try:
+            report = asyncio.run(execute_investigation(args))
+            render_report(report, args.output)
+        except KeyboardInterrupt:
+            console.print(f"\n[bold {GOLD}]Investigation halted by user (SIGINT).[/{GOLD}]")
+            sys.exit(130)
+        except Exception as exc:
+            console.print(f"\n[bold {HOT_PINK}]Critical pipeline failure: {exc}[/{HOT_PINK}]")
+            sys.exit(1)
+    else:
+        # Launch Interactive Menu Mode
+        run_interactive_mode(args)
 
 
 if __name__ == "__main__":
