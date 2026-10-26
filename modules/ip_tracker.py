@@ -211,10 +211,10 @@ async def track_ip(
             is_valid=True,
             is_private=True,
             hostname=hostname,
-            country="Local / Internal Network",
+            country="N/A — Private Network (Non-Routable)",
             country_code="LOCAL",
             region=profile["scope"],
-            city="Private Subnet Segment",
+            city="N/A — Cannot Geolocate Private IP",
             isp="Local Network Operator / Gateway",
             asn=profile["subnet_class"].split(" ")[0],
             subnet_class=profile["subnet_class"],
@@ -222,9 +222,12 @@ async def track_ip(
             estimated_gateway=profile["estimated_gateway"],
             subnet_range=profile["subnet_range"],
             vendor_profile=profile["vendor_profile"],
+            google_maps_url=None,
             radius_confidence_km=radius,
             confidence_warning=(
-                f"Private IP detected ({profile['subnet_class']}). Address is internal to the LAN and non-routable over the public WAN. "
+                f"Private IP detected ({profile['subnet_class']}). "
+                f"This address exists ONLY on your local network (LAN) and cannot be geolocated. "
+                f"It is non-routable over the public Internet. "
                 f"Hardware/Segment Heuristic: {profile['vendor_profile']}."
             ),
             raw_data={"classification": "Internal Private Subnet", **profile}
@@ -293,6 +296,11 @@ async def track_ip(
 
                         radius, warning = calculate_radius_confidence(city, region, country)
 
+                        # Generate Google Maps link if coordinates available
+                        google_maps_url = None
+                        if lat is not None and lon is not None:
+                            google_maps_url = f"https://www.google.com/maps?q={lat},{lon}"
+
                         return IPIntelligence(
                             ip=clean_ip,
                             is_valid=True,
@@ -308,6 +316,7 @@ async def track_ip(
                             isp=isp,
                             asn=asn,
                             timezone=data.get("timezone"),
+                            google_maps_url=google_maps_url,
                             radius_confidence_km=radius,
                             confidence_warning=warning,
                             raw_data=data

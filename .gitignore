@@ -35,6 +35,7 @@ desktop.ini
 
 # ─── OmniSight Outputs ──────────────────────────────────────────────────────
 *.json
+!targets.json.example
 !.env.example
 logs/
 output/

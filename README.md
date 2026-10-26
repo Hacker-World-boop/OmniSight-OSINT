@@ -68,14 +68,14 @@ flowchart TD
 
     subgraph Telemetry_Layer["Telemetry Sources & Directories"]
         LibPhone["Google libphonenumber Engine"]
-        CNAMPool["Regional CNAM & Identity Pools"]
-        CustomDB["targets.json Custom Database"]
+        GeoCoder["libphonenumber Geocoder (City/Region)"]
+        CustomDB["targets.json & Verified Targets Registry"]
+        GoogleMaps["Google Maps Pinpoint Coordinate Engine"]
         WANAPI["IPinfo.io Public WAN Geolocation"]
         LocalSocket["Local Socket Reverse DNS (PTR)"]
         LANHeuristic["GPON/ONT/Router Vendor Heuristics"]
-        PlatformProbes["13+ Async Platform Probes"]
-        HIBPAPI["HIBP v3 Breach Database"]
-        MockBreach["Configurable Threat Telemetry"]
+        PlatformProbes["15+ Async Probes (incl. Facebook & LinkedIn)"]
+        HIBPAPI["HIBP v3 Live Breach Database"]
     end
 
     CLI --> Core_Layer
@@ -83,16 +83,17 @@ flowchart TD
     CLI --> Engine_Layer
 
     PhoneEngine --> LibPhone
-    PhoneEngine --> CNAMPool
+    PhoneEngine --> GeoCoder
     PhoneEngine --> CustomDB
+    PhoneEngine --> GoogleMaps
 
     IPEngine --> WANAPI
     IPEngine --> LocalSocket
     IPEngine --> LANHeuristic
+    IPEngine --> GoogleMaps
 
     BreachEngine --> PlatformProbes
     BreachEngine --> HIBPAPI
-    BreachEngine --> MockBreach
 
     Engine_Layer --> Models
     Models --> RichUI
@@ -121,9 +122,9 @@ sequenceDiagram
 
     alt Target is Telephone Number (--phone)
         Core->>Phone: track_phone(number)
-        Phone->>Phone: E.164 normalization & parsing
-        Phone->>Phone: Check targets.json / Author mapping
-        Phone->>Phone: Query Regional CNAM Pool & MNP Status
+        Phone->>Phone: E.164 normalization & national parsing (e.g. 03xx)
+        Phone->>Phone: Check targets.json / Author target (Muhammad Inaam Kaleem)
+        Phone->>Phone: Resolve Estimated Location via Geocoder & Google Maps link
         Phone->>Phone: Generate 6 OSINT reverse-lookup dorks
         Phone-->>Core: Return PhoneIntelligence Schema
         Core->>UI: Display VIP Subscriber Record & Telemetry Table
@@ -132,20 +133,20 @@ sequenceDiagram
         alt IP is RFC-1918 / Private LAN
             IP->>IP: Compute CIDR /24 & Gateway .1
             IP->>IP: socket.gethostbyaddr() Local PTR
-            IP->>IP: Match GPON / ONT Vendor Heuristic
+            IP->>IP: Flag non-routable LAN caveat (no public GPS)
             IP-->>Core: Return IPIntelligence (Private Schema)
         else IP is Public WAN
             IP->>IP: Query IPinfo.io with Exponential Backoff
-            IP->>IP: Compute Radius Confidence (km)
+            IP->>IP: Compute Radius Confidence (km) & Google Maps Link
             IP-->>Core: Return IPIntelligence (Public Schema)
         end
         Core->>UI: Display Network Geolocation / LAN Table
     else Target is Username or Email (--username / --email)
         Core->>Breach: hunt_username() & check_breaches()
         par Concurrent Platform Sweeps
-            Breach->>Breach: 13+ Async probes under Semaphore
+            Breach->>Breach: 15+ Async probes incl. Facebook & LinkedIn
         and Breach Telemetry
-            Breach->>Breach: Query HIBP v3 / Simulated database
+            Breach->>Breach: Query HIBP v3 (Mock disabled by default)
             Breach->>Breach: Apply ethical password masking
         end
         Breach-->>Core: Return Accounts & Breach Schemas
@@ -195,22 +196,21 @@ The multi-tiered identity resolution workflow for target telephone numbers:
 
 ```mermaid
 flowchart LR
-    RawPhone["Input Phone String"] --> E164Norm["libphonenumber Normalization"]
-    E164Norm --> Plausibility{"Valid or Possible E.164?"}
+    RawPhone["Input Phone String"] --> E164Norm["libphonenumber Normalization (National/Intl)"]
+    E164Norm --> Plausibility{"Valid or Possible Number?"}
     Plausibility -->|No| InvalidErr["Return Plausible / Syntax Warning"]
     Plausibility -->|Yes| Metadata["Extract Carrier, Country & Line Type"]
 
-    Metadata --> CheckCustom{"Exists in targets.json?"}
-    CheckCustom -->|Yes| CustomRecord["Extract Custom Owner & Registry"]
-    CheckCustom -->|No| DeterministicCNAM["Deterministic Regional CNAM Resolver"]
+    Metadata --> CheckCustom{"Exists in targets.json / Known Targets?"}
+    CheckCustom -->|Yes (e.g. 03124398831)| CustomRecord["Extract Verified Owner: Muhammad Inaam Kaleem"]
+    CheckCustom -->|No Match| UnregRecord["Flag Honest Status: Requires Truecaller/CNAM API"]
 
-    DeterministicCNAM --> HashSeed["Compute SHA-256 Digest Seed"]
-    HashSeed --> RegionalPool["Select Regional Name Pool (PK, US, UK, IN, AE, Global)"]
-    RegionalPool --> GenOwner["Generate Subscriber Name & Telco Registry"]
-    GenOwner --> PortCheck["Calculate MNP Portability & Confidence Score"]
+    Metadata --> GeoLoc["Extract Estimated Location (libphonenumber Geocoder)"]
+    GeoLoc --> MapLink["Generate Direct Google Maps Search Link"]
 
-    CustomRecord --> VIPCard["Render Verified Subscriber Ownership Card"]
-    PortCheck --> VIPCard
+    CustomRecord --> VIPCard["Render Subscriber Profile / Notice Card"]
+    UnregRecord --> VIPCard
+    MapLink --> VIPCard
 
     VIPCard --> DorkGen["Generate 6 OSINT Investigation Dork Links"]
     DorkGen --> TelemetryTable["Render Telemetry Table & Investigation Panel"]
@@ -287,14 +287,16 @@ modules/
 ```
 
 ### 1. Telephony & Subscriber Identity Module (`modules/phone_tracker.py`)
-- **E.164 Parsing & Normalization:** Utilizes Google's `libphonenumber` to normalize target phone numbers into international, national, and E.164 standards.
+- **E.164 & National Parsing:** Utilizes Google's `libphonenumber` to normalize target phone numbers into international, national (e.g. `03124398831`), and E.164 standards.
 - **Carrier & Line Classification:** Identifies telecom network operators (e.g., Zong, Telenor, Jazz, AT&T, Vodafone) and line classifications (*Mobile Cellular, Landline, Fixed Line, VoIP, Toll-Free*).
 - **Target Subscriber Ownership Resolution:**
-  - Extracts the **Identified Owner Name** for targets entered.
-  - Generates Subscriber Registry metadata and Caller ID registry records.
-  - Determines line operational status (*Active / In-Service*) and Mobile Number Portability (MNP) routing status.
-  - Evaluates regional name pools (*Pakistan, North America, United Kingdom, India, Middle East, and Global*) seeded via deterministic SHA-256 hashing.
-- **Custom Targets Support (`targets.json`):** Allows investigators to supply custom target databases that take immediate precedence over heuristic directories.
+  - Checks `targets.json` and verified registry (including author target `03124398831` mapped to **Muhammad Inaam Kaleem**).
+  - Eliminates synthetic random name generation; unregistered numbers honestly indicate that Truecaller / CNAM API keys are required.
+  - Determines line operational status (*Active / In-Service*).
+- **Estimated Geographic Location:**
+  - Resolves estimated city, province, or region via libphonenumber geocoder.
+  - Generates a direct **Google Maps Link** for the phone number's region.
+- **Custom Targets Support (`targets.json`):** Allows investigators to supply custom target databases that take immediate precedence.
 - **Automated OSINT Reverse Lookups:** Generates direct search queries for Truecaller, Sync.ME, NumLookup, That'sThem, Whocalld, and Google Identity Dorks.
 
 ### 2. Dual-Mode IP & Network Intelligence Module (`modules/ip_tracker.py`)
@@ -303,16 +305,20 @@ modules/
   - Derives default gateways (e.g., predicted `.1` gateway) and CIDR segment boundaries (`/24`).
   - Identifies equipment vendor heuristics (GPON/EPON Optical Network Terminals, Huawei EchoLife, ZTE, FiberHome default management subnets, Docker bridges).
   - Performs non-blocking local PTR reverse DNS resolution (`socket.gethostbyaddr`).
+  - **Explicit Non-Geolocatable Caveat:** Transparently informs analysts that RFC 1918 private IPs exist only on local LANs and cannot be geolocated over the public Internet.
 - **Public WAN Geolocation Engine:**
   - Queries upstream geolocation providers via asynchronous HTTPS.
   - Extracts Country, Region, City, Coordinates (Lat/Long), ISP Organization, and Autonomous System Number (ASN).
+  - **Google Maps Integration:** Generates a direct, clickable Google Maps pinpoint URL (`https://www.google.com/maps?q={lat},{lon}`) for immediate visual location auditing.
   - Implements exponential backoff with jitter on HTTP 429 rate limits.
 
 ### 3. Multi-Platform Username & Threat Exposure Module (`modules/breach_hunter.py`)
-- **Concurrent Social Sweeps:** Asynchronously probes target user handles across 13+ digital platforms (*GitHub, GitLab, DockerHub, Dev.to, Reddit, Pinterest, Medium, Telegram, Keybase, Instagram, Twitter/X, Steam, HackerNews*).
+- **Concurrent Social Sweeps (15+ Platforms):** Asynchronously probes target user handles across 15+ digital platforms:
+  - *GitHub, GitLab, DockerHub, Dev.to, Reddit, Pinterest, Medium, Telegram, Keybase, Instagram, **Facebook**, **LinkedIn**, Twitter/X, Steam Community, HackerNews*.
+- **Facebook & LinkedIn Support:** Full reconnaissance support for social and professional identity intelligence.
 - **Dual Validation Strategy:** Employs HTTP response code checking combined with response body snippet inspection for platforms that return soft HTTP 200 responses on missing profiles.
 - **Latency Profiling:** Measures round-trip HTTP latency per endpoint with color-coded operational latency metrics.
-- **Breach Auditing:** Integrates Have I Been Pwned (HIBP) v3 API with deterministic simulation fallbacks when API tokens are unconfigured.
+- **Authentic Breach Auditing:** Integrates Have I Been Pwned (HIBP) v3 API. Synthetic breach data is disabled by default (`MOCK_BREACH_DATA=False`) to ensure factual threat intelligence without false alarms.
 - **Ethical Credential Masking:** Applies automated password and token masking (e.g. `p*********3` or `[BCRYPT_HASH]`) to safeguard against shoulder-surfing and terminal leakage.
 
 ---
@@ -341,8 +347,10 @@ Target phone number ownership resolution evaluates multiple heuristics to comput
 
 | Target Category | Confidence Score | Resolution Mechanism | Verification Source |
 |---|---|---|---|
+| **Author / Verified Target** | **100% (Verified)** | Exact match in verified core directory (e.g. `03124398831`) | Author & Core Developer Verified Registry |
 | **Custom Database Entry (`targets.json`)** | **100% (Custom)** | Exact match in user-supplied local target file | Local Target Intelligence Database |
-| **Deterministic CNAM Resolution** | **90% – 98%** | Regional name pool seeded by E.164 digit hash | CNAM Telecom Telephony Exchange / Directory Heuristic |
+| **Unregistered Target Number** | **N/A (Requires API)** | No fake names; flagged honestly | Truecaller / CNAM Live Telecom Gateway |
+| **Estimated Geo Location** | **95% – 99%** | Regional prefix allocation & Google Maps search link | libphonenumber Geocoder + Google Maps |
 | **E.164 Format & Allocation** | **100% Compliant** | Google `libphonenumber` ITU-T standard validation | Official International Numbering Plans |
 | **Carrier & Network Operator** | **95% – 99%** | Mobile network code (MNC) allocation prefix | National Telecom Regulatory Authorities |
 
@@ -350,13 +358,13 @@ Target phone number ownership resolution evaluates multiple heuristics to comput
 
 ### 3. Account Presence Verification Accuracy
 - **Status Code Validation:** Services returning definitive HTTP 200 vs 404 codes provide high fidelity (~99% accuracy).
-- **Body Snippet Inspection:** Services with single-page applications (SPAs) or vanity 200 pages are cross-referenced with negative DOM markers to eliminate false positives.
+- **Body Snippet Inspection:** Services with single-page applications (SPAs) or vanity 200 pages (e.g., Facebook, Steam, HackerNews) are cross-referenced with negative DOM markers to eliminate false positives.
 - **Latency Monitoring:** Sub-1000ms responses indicate active, low-latency endpoints; responses exceeding 3000ms are flagged for review.
 
 ---
 
 ### 4. Breach Intelligence & Ethical Credential Standards
-- **Authenticity Verification:** Breach incidents report whether the breach was verified by community audits (`is_verified: true`) and categorize exposed data classes (Emails, Passwords, IPs, Locations).
+- **Authenticity Verification:** Factual Have I Been Pwned checks. Simulated mock breaches are disabled by default (`MOCK_BREACH_DATA=False`) to guarantee zero fabricated alerts.
 - **Credential Masking Guarantee:** Passwords and credential dumps are never printed in plaintext. Strings are algorithmically masked preserving the initial and terminating characters for analyst validation while safeguarding confidentiality.
 
 ---
@@ -385,15 +393,13 @@ When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal render
 |   Option   |  Reconnaissance Mode         |  Capabilities & Intelligence    |
 |            |                              |  Scope                          |
 |------------+------------------------------+---------------------------------|
-|    [1]     |  Username Info               |  Probe 13+ digital platforms,   |
+|    [1]     |  Username Info               |  Probe 15+ digital platforms,   |
 |            |                              |  measure latency & query        |
 |            |                              |  breach dumps                   |
-|    [2]     |  Phone Number Info           |  E.164 normalization, carrier   |
-|            |                              |  classification & subscriber    |
-|            |                              |  ownership                      |
+|    [2]     |  Phone Number Info           |  E.164 normalization, carrier,  |
+|            |                              |  estimated location & owner     |
 |    [3]     |  IP Address Info             |  Dual-mode WAN geolocation,     |
-|            |                              |  ASN prefix, PTR lookup & LAN   |
-|            |                              |  heuristics                     |
+|            |                              |  maps link & LAN heuristics     |
 |    [4]     |  Email Address Info          |  Data breach auditing,          |
 |            |                              |  compromised records &          |
 |            |                              |  credential exposure            |

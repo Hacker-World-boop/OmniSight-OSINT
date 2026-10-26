@@ -100,6 +100,21 @@ PLATFORMS_CATALOGUE = [
         "missing_code": 404
     },
     {
+        "name": "Facebook",
+        "category": "Social Media",
+        "url_template": "https://www.facebook.com/{}",
+        "check_type": "body_content",
+        "missing_snippet": "The page you requested was not found"
+    },
+    {
+        "name": "LinkedIn",
+        "category": "Professional",
+        "url_template": "https://www.linkedin.com/in/{}/",
+        "check_type": "status_code",
+        "exists_code": 200,
+        "missing_code": 404
+    },
+    {
         "name": "Twitter / X",
         "category": "Social Media",
         "url_template": "https://x.com/{}",
@@ -340,10 +355,10 @@ async def check_breaches(
                 else:
                     logger.warning(f"HIBP returned HTTP status {resp.status}")
 
-        # 2. Configurable / Mock Threat Intelligence Simulation
+        # 2. Configurable / Mock Threat Intelligence Simulation (disabled by default)
         if settings.mock_breach_data:
             logger.info(
-                f"Generating realistic breach correlation telemetry for '{target}' (Mock Engine Active)..."
+                f"Generating simulated breach telemetry for '{target}' (Mock Engine Active — set MOCK_BREACH_DATA=False to disable)..."
             )
             # Deterministic simulation based on target string
             simulated_records = [
@@ -379,6 +394,13 @@ async def check_breaches(
                 )
             ]
             return simulated_records
+
+        # 3. No API key and no mock — return empty with informative log
+        if not key:
+            logger.info(
+                f"No HIBP API key configured. Cannot check real breach data for '{target}'. "
+                "Set HIBP_API_KEY in .env to enable live breach lookups."
+            )
 
         return []
 

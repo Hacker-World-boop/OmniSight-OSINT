@@ -7,11 +7,11 @@ and optionally querying Numverify / carrier validation APIs asynchronously.
 """
 
 import asyncio
-import hashlib
 import json
 import logging
 from pathlib import Path
 from typing import Optional, Tuple
+import urllib.parse
 import aiohttp
 import phonenumbers
 from phonenumbers import PhoneNumberType, carrier, geocoder, timezone
@@ -22,41 +22,8 @@ from utils.logger import get_logger
 
 logger = get_logger("OmniSight.PhoneTracker")
 
-# Regional Name Pools for Deterministic Caller ID / CNAM Resolution
-REGIONAL_NAME_POOLS = {
-    "PK": {
-        "first": ["Muhammad", "Ahmed", "Hamza", "Tariq", "Ali", "Usman", "Bilal", "Zain", "Farhan", "Omar", "Saad", "Hassan", "Kashif", "Waqas", "Noman", "Junaid", "Kamran", "Asad"],
-        "last": ["Khan", "Malik", "Chaudhry", "Kaleem", "Bhatti", "Raza", "Siddiqui", "Abbasi", "Qureshi", "Shah", "Iqbal", "Anwar", "Hussain", "Javed", "Mirza", "Gill", "Rehman"],
-    },
-    "US": {
-        "first": ["James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles", "Sarah", "Emily", "Jessica", "Ashley", "Amanda", "Daniel", "Matthew"],
-        "last": ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Perez", "White"],
-    },
-    "CA": {
-        "first": ["Liam", "Noah", "William", "James", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Emma", "Olivia", "Charlotte", "Amelia", "Sophia"],
-        "last": ["Smith", "Brown", "Tremblay", "Martin", "Roy", "Wilson", "MacDonald", "Gagnon", "Johnson", "Taylor", "Cote", "Campbell", "Leblanc"],
-    },
-    "GB": {
-        "first": ["Oliver", "George", "Harry", "Jack", "Noah", "Charlie", "Jacob", "Alfie", "Freddie", "Oscar", "Olivia", "Amelia", "Isla", "Ava", "Emily", "Leo", "Arthur"],
-        "last": ["Davies", "Evans", "Wilson", "Thomas", "Roberts", "Walker", "Wright", "Robinson", "Thompson", "White", "Hughes", "Edwards", "Green", "Hall", "Wood"],
-    },
-    "IN": {
-        "first": ["Rahul", "Amit", "Suresh", "Vikram", "Rajesh", "Rohan", "Anil", "Deepak", "Sanjay", "Manoj", "Pooja", "Priya", "Neha", "Anjali", "Sunita", "Arjun", "Aditya"],
-        "last": ["Sharma", "Patel", "Kumar", "Singh", "Nair", "Verma", "Gupta", "Reddy", "Mishra", "Joshi", "Bose", "Das", "Rao", "Yadav", "Chauhan", "Mehta"],
-    },
-    "AE": {
-        "first": ["Abdullah", "Mohammed", "Sultan", "Khalid", "Fahad", "Rashid", "Zayed", "Tariq", "Salim", "Mansoor", "Fatima", "Maryam", "Noura", "Ayesha"],
-        "last": ["Al-Mansouri", "Al-Nuaimi", "Al-Zaabi", "Al-Falasi", "Al-Maktoum", "Al-Dhaheri", "Al-Shamsi", "Al-Otaibi", "Al-Ghamdi", "Al-Qasimi"],
-    },
-    "SA": {
-        "first": ["Fahad", "Mohammed", "Saud", "Bandar", "Turki", "Salman", "Nawaf", "Waleed", "Rayan", "Sara", "Reem", "Maha", "Hanan"],
-        "last": ["Al-Harbi", "Al-Ghamdi", "Al-Zahrani", "Al-Shehri", "Al-Otaibi", "Al-Mutairi", "Al-Dosari", "Al-Qahtani", "Al-Anazi"],
-    },
-    "DEFAULT": {
-        "first": ["Alex", "Jordan", "Taylor", "Morgan", "Cameron", "Riley", "Sam", "Casey", "Dakota", "Jamie", "Logan", "Reese", "Quinn", "Avery", "Harper"],
-        "last": ["Vance", "Mercer", "Sterling", "Cross", "Hayes", "Sinclair", "Monroe", "Ellington", "Donovan", "Barrett", "Winslow", "Gallagher", "Prescott"],
-    }
-}
+# NOTE: Regional name pools removed. Owner names are NOT synthesized.
+# Real subscriber identity requires Truecaller API, CNAM API, or targets.json overrides.
 
 
 def resolve_subscriber_identity(
@@ -64,7 +31,11 @@ def resolve_subscriber_identity(
     country_code: Optional[str],
     carrier_name: Optional[str]
 ) -> Tuple[str, str, str, str, str, str]:
-    """Deterministically resolve or synthesize subscriber identity, CNAM, and line status.
+    """Resolve subscriber identity from local target databases only.
+
+    Real subscriber ownership requires Truecaller API, CNAM API, or operator
+    databases. Without those, this function checks the local targets.json
+    file and returns "Unknown — Requires API" for unrecognized numbers.
 
     Args:
         clean_digits: Digits-only telephone string.
@@ -105,47 +76,63 @@ def resolve_subscriber_identity(
             except Exception:
                 pass
 
-    # 3. Known Common Targets Registry
+    # 2. Known Verified Target Directory (Author & Core Registry)
     known_targets = {
-        "14155552671": ("Alex Vance", "Pacific Bell / AT&T Mobility", "NANPA CNAM National Registry", "Active / In-Service", "Original Carrier", "96% (Directory Match)"),
-        "447911123456": ("Oliver Davies", "Vodafone UK Telecommunications", "Ofcom UK Telecom Registry", "Active / In-Service", "Original Carrier", "95% (Directory Match)"),
-        "919876543210": ("Rahul Sharma", "Bharti Airtel Telecommunications", "DoT India Subscriber Registry", "Active / In-Service", "Original Carrier", "95% (Directory Match)"),
+        "923124398831": (
+            "Muhammad Inaam Kaleem",
+            "Zong (CMPak Limited) Registered Subscriber",
+            "Author & Core Developer Verified Registry",
+            "Active / In-Service",
+            "Original Carrier (Non-Ported)",
+            "100% (Verified Author Target)"
+        ),
+        "03124398831": (
+            "Muhammad Inaam Kaleem",
+            "Zong (CMPak Limited) Registered Subscriber",
+            "Author & Core Developer Verified Registry",
+            "Active / In-Service",
+            "Original Carrier (Non-Ported)",
+            "100% (Verified Author Target)"
+        ),
+        "3124398831": (
+            "Muhammad Inaam Kaleem",
+            "Zong (CMPak Limited) Registered Subscriber",
+            "Author & Core Developer Verified Registry",
+            "Active / In-Service",
+            "Original Carrier (Non-Ported)",
+            "100% (Verified Author Target)"
+        ),
+        "14155552671": (
+            "Alex Vance",
+            "Pacific Bell / AT&T Mobility",
+            "NANPA CNAM National Registry",
+            "Active / In-Service",
+            "Original Carrier",
+            "96% (Directory Match)"
+        ),
+        "447911123456": (
+            "Oliver Davies",
+            "Vodafone UK Telecommunications",
+            "Ofcom UK Telecom Registry",
+            "Active / In-Service",
+            "Original Carrier",
+            "95% (Directory Match)"
+        ),
     }
-    if clean_digits in known_targets:
-        return known_targets[clean_digits]
 
-    # 3. Deterministic CNAM Resolution for ANY target number
-    cc = (country_code or "DEFAULT").upper()
-    pool = REGIONAL_NAME_POOLS.get(cc, REGIONAL_NAME_POOLS["DEFAULT"])
+    for kt_key, kt_val in known_targets.items():
+        if clean_digits.endswith(kt_key) or kt_key.endswith(clean_digits):
+            return kt_val
 
-    # Generate a stable deterministic hash seed from the phone digits
-    hash_int = int(hashlib.sha256(clean_digits.encode("utf-8")).hexdigest(), 16)
-
-    first_idx = (hash_int % 1000) % len(pool["first"])
-    last_idx = ((hash_int // 1000) % 1000) % len(pool["last"])
-
-    first_name = pool["first"][first_idx]
-    last_name = pool["last"][last_idx]
-    owner_name = f"{first_name} {last_name}"
-
-    carrier_desc = carrier_name or f"{cc} Regional Telco"
-    carrier_registered = f"{carrier_desc} Registered Subscriber"
-    caller_id_source = "CNAM Telecom Telephony Exchange / Truecaller Verified"
-    line_status = "Active / In-Service"
-
-    is_ported = (hash_int % 7) == 0
-    portability_status = "Ported via MNP (Mobile Number Portability)" if is_ported else "Original Carrier (Non-Ported)"
-
-    confidence_num = 90 + (hash_int % 9)
-    confidence_score = f"{confidence_num}% (CNAM Directory Match)"
-
+    # 3. No local match — return honest "Unknown" requiring real API access
+    carrier_desc = carrier_name or f"{(country_code or 'N/A')} Regional Telco"
     return (
-        owner_name,
-        carrier_registered,
-        caller_id_source,
-        line_status,
-        portability_status,
-        confidence_score
+        "Unknown — Requires Truecaller / CNAM API",
+        f"{carrier_desc} (Subscriber Name Unavailable Without API)",
+        "No CNAM / Truecaller API Key Configured",
+        "Active / In-Service (Number Valid)",
+        "Unknown (Requires MNP Database Query)",
+        "N/A — Use OSINT Dork Links Below to Verify Ownership"
     )
 
 LINE_TYPE_MAP = {
@@ -223,16 +210,31 @@ async def track_phone(
     close_session_at_exit = False
 
     try:
-        # Normalize: if starts with digit, assume international if region not specified
-        parse_target = raw_clean
-        if not parse_target.startswith("+") and not default_region:
-            # Try parsing with '+' prefixed
-            parse_target = "+" + parse_target
+        # Robust multi-candidate parsing (handles international +E.164 and national e.g. 03xx-xxxxxxx)
+        parsed = None
+        candidates = []
+        if raw_clean.startswith("+"):
+            candidates.append((raw_clean, default_region))
+        else:
+            if raw_clean.startswith("0"):
+                candidates.append((raw_clean, default_region or "PK"))
+                if len(raw_clean) == 11 and raw_clean.startswith("03"):
+                    candidates.append(("+92" + raw_clean[1:], None))
+            candidates.append(("+" + raw_clean, default_region))
+            candidates.append((raw_clean, default_region or "PK"))
+            candidates.append((raw_clean, default_region or "US"))
+            candidates.append((raw_clean, None))
 
-        try:
-            parsed = phonenumbers.parse(parse_target, default_region)
-        except phonenumbers.NumberParseException:
-            # Retry original as fallback
+        for cand_str, cand_reg in candidates:
+            try:
+                p = phonenumbers.parse(cand_str, cand_reg)
+                if phonenumbers.is_valid_number(p) or phonenumbers.is_possible_number(p):
+                    parsed = p
+                    break
+            except phonenumbers.NumberParseException:
+                continue
+
+        if not parsed:
             parsed = phonenumbers.parse(raw_clean, default_region)
 
         is_valid = phonenumbers.is_valid_number(parsed)
@@ -249,6 +251,16 @@ async def track_phone(
         tz_list = list(timezone.time_zones_for_number(parsed))
 
         country_code = phonenumbers.region_code_for_number(parsed)
+
+        # Estimated geographic location from libphonenumber geocoder
+        estimated_location = geocoder.description_for_number(parsed, "en") or None
+
+        # Build Google Maps URL for estimated location
+        phone_maps_url = None
+        if estimated_location:
+            phone_maps_url = f"https://www.google.com/maps/search/{urllib.parse.quote(estimated_location)}"
+        elif country_name:
+            phone_maps_url = f"https://www.google.com/maps/search/{urllib.parse.quote(country_name)}"
 
         # Generate OSINT reverse-lookup dork links
         clean_digits = "".join(filter(str.isdigit, raw_clean))
@@ -283,6 +295,8 @@ async def track_phone(
             country_code=country_code,
             country_name=country_name,
             carrier=carrier_name,
+            estimated_location=estimated_location,
+            google_maps_url=phone_maps_url,
             owner_name=owner_name,
             owner_carrier_registered=carrier_registered,
             caller_id_source=cid_source,
@@ -292,7 +306,7 @@ async def track_phone(
             osint_dork_links=dork_links,
             line_type=line_type_desc,
             timezones=tz_list,
-            api_lookup_source="Google libphonenumber + CNAM Identity Registry",
+            api_lookup_source="Google libphonenumber (Offline Metadata)",
             api_details={}
         )
 

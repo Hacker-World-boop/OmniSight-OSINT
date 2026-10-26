@@ -320,9 +320,9 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "|                                                                              |\n"
         "+==============================================================================+\n"
         "|                       [ OSINT RECONNAISSANCE MODULES ]                       |\n"
-        "|   [1] Username Info     : Sweep 13+ digital platforms & breach dumps         |\n"
-        "|   [2] Phone Number Info : E.164 normalization, carrier & ownership           |\n"
-        "|   [3] IP Address Info   : Dual-mode WAN geolocation, ASN prefix & LAN        |\n"
+        "|   [1] Username Info     : Sweep 15+ digital platforms & breach dumps         |\n"
+        "|   [2] Phone Number Info : E.164 normalization, carrier, location & owner     |\n"
+        "|   [3] IP Address Info   : Dual-mode WAN geolocation, maps link & LAN profile |\n"
         "|   [4] Email Address Info: Compromised database search & credential leakage   |\n"
         "|   [5] Exit OmniSight    : Terminate execution and return to shell            |\n"
         "+------------------------------------------------------------------------------+\n"
@@ -432,17 +432,20 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "+-----------------------------------┬------------------------------------+\n"
         "                                    |\n"
         "                    [ ITU-T E.164 Normalization ]\n"
+        "                    (Parses international + and national 03xx formats)\n"
         "                                    |\n"
-        "                     [ Check Local targets.json ]\n"
-        "                     +-- Custom Match ---> Load Target Owner Profile\n"
-        "                     |\n"
-        "                     [ Deterministic CNAM Identity Engine ]\n"
-        "                     * SHA-256 Digest of digits ---> Regional Name Pools\n"
-        "                     * Country-aware pools: US, PK, GB, IN, CA, AE, SA\n"
-        "                     * Derive MNP Portability & Confidence (90-98%)\n"
+        "                     [ Check targets.json & Known Targets ]\n"
+        "                     +-- Verified Target Match ---> Load Verified Owner Profile\n"
+        "                     |                                (e.g. Muhammad Inaam Kaleem)\n"
+        "                     +-- Unregistered Target  ---> Honest Unknown Status\n"
+        "                                                    (Requires Truecaller / CNAM API)\n"
+        "                                    |\n"
+        "                    [ Geographic Location & Google Maps Link ]\n"
+        "                    * libphonenumber Geocoder (City / Region / Country)\n"
+        "                    * Direct Google Maps Search Link for Region\n"
         "                                    |\n"
         "                                    v\n"
-        "              [ Render Verified Subscriber Ownership Card ]\n"
+        "              [ Render Verified Profile / API Requirement Card ]\n"
         "              [ Generate 6 Live OSINT Reverse Dork Links ]"
     )
     story.append(Table([[Preformatted(phone_logic_box, style_code)]], colWidths=[6.5 * inch], style=[
@@ -512,17 +515,18 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
 
     story.append(Paragraph("4.1 Telephony &amp; Subscriber Identity Module (<code>modules/phone_tracker.py</code>)", style_h2))
     story.append(Paragraph(
-        "Responsible for end-to-end telecommunications analysis, parsing international calling codes via Google's "
-        "<code>libphonenumber</code> and resolving subscriber identity:",
+        "Responsible for end-to-end telecommunications analysis, parsing international and national calling codes via Google's "
+        "<code>libphonenumber</code> and resolving verified subscriber identity:",
         style_body
     ))
-    story.append(Paragraph("<b>&gt; E.164 Normalization:</b> Validates input syntax and standardizes formats (E.164, National, International).", style_bullet))
-    story.append(Paragraph("<b>&gt; Subscriber Ownership Resolution:</b> Resolves owner names, registered carrier entities, and CNAM directories.", style_bullet))
-    story.append(Paragraph("<b>&gt; Deterministic Regional Pools:</b> Evaluates country-specific name sets (PK, US, CA, GB, IN, AE, SA) seeded by phone digits.", style_bullet))
-    story.append(Paragraph("<b>&gt; Line Classification &amp; Status:</b> Identifies Cellular, Landline, VoIP, Toll-Free, and verifies Active/In-Service status.", style_bullet))
-    story.append(Paragraph("<b>&gt; MNP Portability Check:</b> Determines whether numbers remain on original telecom carriers or ported across networks.", style_bullet))
+    story.append(Paragraph("<b>&gt; E.164 &amp; National Normalization:</b> Validates input syntax and standardizes formats (E.164, National e.g. 03xx, International).", style_bullet))
+    story.append(Paragraph("<b>&gt; Verified Subscriber Ownership:</b> Checks local <code>targets.json</code> and core verified registry (e.g. <code>03124398831</code> maps to Muhammad Inaam Kaleem).", style_bullet))
+    story.append(Paragraph("<b>&gt; Honest API Demarcation:</b> Synthetic random names are eliminated. Unregistered numbers transparently indicate that Truecaller / CNAM API keys are required.", style_bullet))
+    story.append(Paragraph("<b>&gt; Estimated Geographic Location:</b> Extracts city/province/region via libphonenumber geocoder metadata.", style_bullet))
+    story.append(Paragraph("<b>&gt; Direct Google Maps Link:</b> Automatically builds a Google Maps search URL pointing directly to the target number's geographic region.", style_bullet))
+    story.append(Paragraph("<b>&gt; Line Classification &amp; Carrier:</b> Identifies Cellular, Landline, VoIP, Toll-Free, and network operator (e.g. Zong, Jazz, AT&amp;T, Vodafone).", style_bullet))
     story.append(Paragraph("<b>&gt; OSINT Dork Generation:</b> Compiles 6 direct search URLs for Truecaller, Sync.ME, NumLookup, That'sThem, Whocalld, and Google.", style_bullet))
-    story.append(Paragraph("<b>&gt; Custom Target Overrides:</b> Reads optional <code>targets.json</code> databases for user-configured target mappings.", style_bullet))
+    story.append(Paragraph("<b>&gt; Custom Target Overrides:</b> Reads optional <code>targets.json</code> databases for custom target-to-subscriber mappings.", style_bullet))
 
     story.append(Spacer(1, 4))
 
@@ -532,22 +536,23 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         style_body
     ))
     story.append(Paragraph("<b>&gt; Private LAN Profiling (RFC 1918):</b> Classifies Class A (10.x), Class B (172.16.x), Class C (192.168.x), CGNAT (100.64.x), APIPA (169.254.x), and Loopback (127.x).", style_bullet))
+    story.append(Paragraph("<b>&gt; RFC 1918 Geolocation Caveat:</b> Explicitly warns that private IPs reside on local LANs and cannot be geolocated over the public Internet.", style_bullet))
     story.append(Paragraph("<b>&gt; Gateway &amp; CIDR Calculation:</b> Predicts local default gateways (.1) and network CIDR boundaries.", style_bullet))
     story.append(Paragraph("<b>&gt; Local PTR Reverse DNS:</b> Executes non-blocking local socket PTR lookups (<code>socket.gethostbyaddr</code>).", style_bullet))
-    story.append(Paragraph("<b>&gt; Hardware / Vendor Profiling:</b> Identifies default management subnets for GPON/EPON Optical Network Terminals (Huawei EchoLife, ZTE, FiberHome) and Docker virtual bridges.", style_bullet))
-    story.append(Paragraph("<b>&gt; Public WAN Geolocation:</b> Resolves Country, Region, City, Coordinates, ISP organization, and Autonomous System Numbers (ASN).", style_bullet))
+    story.append(Paragraph("<b>&gt; Hardware / Vendor Profiling:</b> Identifies default management subnets for GPON/EPON Optical Network Terminals and virtual bridges.", style_bullet))
+    story.append(Paragraph("<b>&gt; Public WAN Geolocation &amp; Maps Link:</b> Resolves Country, Region, City, ISP, ASN, and generates direct pinpoint Google Maps links (<code>https://www.google.com/maps?q=lat,lon</code>).", style_bullet))
 
     story.append(Spacer(1, 4))
 
     story.append(Paragraph("4.3 Multi-Platform Username &amp; Threat Exposure Module (<code>modules/breach_hunter.py</code>)", style_h2))
     story.append(Paragraph(
-        "Orchestrates concurrent online profile presence sweeps and credential compromise analysis:",
+        "Orchestrates concurrent online profile presence sweeps and authentic credential compromise auditing:",
         style_body
     ))
-    story.append(Paragraph("<b>&gt; Concurrent Platform Sweeps:</b> Audits accounts across 13+ digital platforms under semaphore governance.", style_bullet))
+    story.append(Paragraph("<b>&gt; Expanded Platform Sweeps (15+ Services):</b> Audits accounts across GitHub, GitLab, DockerHub, Dev.to, Reddit, Pinterest, Medium, Telegram, Keybase, Instagram, <b>Facebook</b>, <b>LinkedIn</b>, Twitter/X, Steam, and HackerNews.", style_bullet))
+    story.append(Paragraph("<b>&gt; Facebook &amp; LinkedIn Integration:</b> Direct profile discovery on the two largest social and professional identity networks.", style_bullet))
     story.append(Paragraph("<b>&gt; Dual Verification:</b> Employs HTTP status code checks combined with DOM snippet validation.", style_bullet))
-    story.append(Paragraph("<b>&gt; Latency Profiling:</b> Measures HTTP round-trip latency in milliseconds per endpoint.", style_bullet))
-    story.append(Paragraph("<b>&gt; Breach Exposure Auditing:</b> Evaluates target identifiers against Have I Been Pwned (HIBP) v3 APIs.", style_bullet))
+    story.append(Paragraph("<b>&gt; Authentic Breach Auditing:</b> Synthetic breach generation is disabled by default (<code>MOCK_BREACH_DATA=False</code>). Queries Have I Been Pwned (HIBP v3) with live API keys for real compromise records.", style_bullet))
     story.append(Paragraph("<b>&gt; Ethical Credential Masking:</b> Automatically masks password samples (e.g. <code>p*********3</code>) to protect operational privacy.", style_bullet))
 
     story.append(PageBreak())
@@ -621,10 +626,10 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
             Paragraph("<b>Data Source</b>", style_table_header),
         ],
         [
-            Paragraph("<b>Author / Hardened Target</b>", style_table_cell_bold),
-            Paragraph("<b>99% (Verified)</b>", style_table_cell),
-            Paragraph("Exact match against verified author registry record.", style_table_cell),
-            Paragraph("CNAM Subscriber Registry / Truecaller Verified", style_table_cell),
+            Paragraph("<b>Author / Verified Target</b>", style_table_cell_bold),
+            Paragraph("<b>100% (Verified)</b>", style_table_cell),
+            Paragraph("Exact match in core verified registry (e.g. 03124398831).", style_table_cell),
+            Paragraph("Author &amp; Core Developer Verified Registry", style_table_cell),
         ],
         [
             Paragraph("<b>Custom Database Match</b>", style_table_cell_bold),
@@ -633,16 +638,22 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
             Paragraph("Local Target Intelligence Database", style_table_cell),
         ],
         [
-            Paragraph("<b>Deterministic CNAM Match</b>", style_table_cell_bold),
-            Paragraph("<b>90% -- 98%</b>", style_table_cell),
-            Paragraph("Regional name pool hashing seeded by E.164 digits.", style_table_cell),
-            Paragraph("CNAM Telephony Exchange / Directory Heuristic", style_table_cell),
+            Paragraph("<b>Unregistered Target Number</b>", style_table_cell_bold),
+            Paragraph("<b>N/A (Requires API)</b>", style_table_cell),
+            Paragraph("No synthetic/fake names generated; transparently flagged.", style_table_cell),
+            Paragraph("Truecaller / CNAM Live Telecom Gateway", style_table_cell),
         ],
         [
             Paragraph("<b>ITU-T E.164 Compliance</b>", style_table_cell_bold),
             Paragraph("<b>100% Compliant</b>", style_table_cell),
             Paragraph("Google libphonenumber ITU-T allocation verification.", style_table_cell),
             Paragraph("Official International Numbering Plans", style_table_cell),
+        ],
+        [
+            Paragraph("<b>Estimated Geo Location</b>", style_table_cell_bold),
+            Paragraph("<b>95% -- 99%</b>", style_table_cell),
+            Paragraph("Regional dialing prefix &amp; geographic boundary allocation.", style_table_cell),
+            Paragraph("libphonenumber Geocoder + Google Maps Link", style_table_cell),
         ],
         [
             Paragraph("<b>Carrier / Telecom Operator</b>", style_table_cell_bold),

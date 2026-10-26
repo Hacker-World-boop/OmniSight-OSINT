@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         ),
         alias="DEFAULT_USER_AGENT"
     )
-    mock_breach_data: bool = Field(default=True, alias="MOCK_BREACH_DATA")
+    mock_breach_data: bool = Field(default=False, alias="MOCK_BREACH_DATA")
 
 
 # Singleton instance caching

@@ -32,6 +32,7 @@ class IPIntelligence(BaseModel):
     estimated_gateway: Optional[str] = Field(default=None, description="Predicted default gateway for this subnet")
     subnet_range: Optional[str] = Field(default=None, description="CIDR subnet range definition")
     vendor_profile: Optional[str] = Field(default=None, description="Heuristic device/vendor profile commonly utilizing this subnet")
+    google_maps_url: Optional[str] = Field(default=None, description="Google Maps URL link to the resolved geolocation coordinates")
     radius_confidence_km: float = Field(
         default=50.0,
         description="Estimated operational accuracy radius in kilometers"
@@ -58,6 +59,8 @@ class PhoneIntelligence(BaseModel):
     country_code: Optional[str] = Field(default=None, description="ISO 3166-1 alpha-2 country code")
     country_name: Optional[str] = Field(default=None, description="Country name derived from calling code")
     carrier: Optional[str] = Field(default=None, description="Cellular/Telco network operator")
+    estimated_location: Optional[str] = Field(default=None, description="Estimated geographic region from libphonenumber geocoder (e.g. city, province, country)")
+    google_maps_url: Optional[str] = Field(default=None, description="Google Maps search URL for the estimated location")
     owner_name: Optional[str] = Field(default=None, description="Identified subscriber or registered ownership name (CNAM/Caller ID)")
     owner_carrier_registered: Optional[str] = Field(default=None, description="Carrier registered subscriber organization or individual")
     caller_id_source: Optional[str] = Field(default=None, description="Source registry for subscriber name (CNAM, Truecaller, Directory)")

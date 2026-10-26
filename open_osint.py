@@ -161,18 +161,26 @@ def display_ip_results(report: TargetIntelligenceReport) -> None:
         table.add_row("Local Hostname / PTR", f"[bold black on {GOLD}] {data.hostname or 'Unresolved'} [/bold black on {GOLD}]")
         table.add_row("Hardware / Vendor Profile", f"[bold {SKY_BLUE}]{data.vendor_profile or 'Standard LAN'}[/bold {SKY_BLUE}]")
         table.add_row("Public WAN Routable", f"[bold {HOT_PINK}]No (Internal Subnet Only)[/bold {HOT_PINK}]")
+        table.add_row("Geographic Location", f"[bold {HOT_PINK}]N/A (Private IP cannot be geolocated)[/bold {HOT_PINK}]")
+        table.add_row("Google Maps Link", f"[bold {HOT_PINK}]N/A (Non-routable LAN, no global GPS)[/bold {HOT_PINK}]")
 
         console.print(table)
 
         # Operational Caveat Panel for Private IP
         warn_text = Text()
-        warn_text.append("[!] LAN BOUNDARY DETECTED: ", style=f"bold {GOLD}")
-        warn_text.append("Internal RFC 1918 Address Space\n", style="bold bright_white")
-        warn_text.append(data.confidence_warning, style="italic bright_white")
+        warn_text.append("[!] PRIVATE NETWORK BOUNDARY DETECTED: ", style=f"bold {GOLD}")
+        warn_text.append("Internal RFC 1918 / Localhost Address Space\n\n", style="bold bright_white")
+        warn_text.append(
+            "Private IP addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8) operate exclusively "
+            "within your local area network (LAN). They do NOT route over the public Internet WAN and therefore "
+            "have NO public geographical location, physical coordinates, or Google Maps positioning.\n\n",
+            style="bright_white"
+        )
+        warn_text.append(f"Diagnostic Profile: {data.confidence_warning}", style="italic dim white")
 
         warning_panel = Panel(
             warn_text,
-            title=f"[bold black on {GOLD}] PRIVATE NETWORK CAVEAT [/bold black on {GOLD}]",
+            title=f"[bold black on {GOLD}] PRIVATE NETWORK & GEOLOCATION CAVEAT [/bold black on {GOLD}]",
             border_style=f"bold {GOLD}",
             box=box.ROUNDED
         )
@@ -198,6 +206,8 @@ def display_ip_results(report: TargetIntelligenceReport) -> None:
     table.add_row("City / Metro", f"[bold {VIOLET}]{data.city or 'Unknown'}[/bold {VIOLET}]")
     table.add_row("Postal / ZIP Code", data.postal or "N/A")
     table.add_row("Coordinates (Lat, Lon)", f"[bold {GOLD}]{data.coordinates or 'N/A'}[/bold {GOLD}]")
+    if data.google_maps_url:
+        table.add_row("Google Maps Link", f"[underline bold {NEON_GREEN}]{data.google_maps_url}[/underline bold {NEON_GREEN}]")
     table.add_row("ISP / Organization", f"[bold {ELECTRIC_CYAN}]{data.isp or 'Unknown'}[/bold {ELECTRIC_CYAN}]")
     table.add_row("Autonomous System (ASN)", f"[bold {PURPLE}]{data.asn or 'N/A'}[/bold {PURPLE}]")
     table.add_row("Timezone", f"[bold bright_white]{data.timezone or 'N/A'}[/bold bright_white]")
@@ -226,28 +236,49 @@ def display_phone_results(report: TargetIntelligenceReport) -> None:
         console.print(f"[{GOLD}]No phone intelligence data captured.[/{GOLD}]")
         return
 
-    # ─── Prominent Subscriber Ownership Identity Card ───────────────────────
+    # ─── Subscriber Ownership Identity Card ───────────────────────────────
     if data.owner_name:
+        is_unknown = "Unknown" in data.owner_name
         owner_card = Text()
-        owner_card.append("  [+] TARGET SUBSCRIBER / OWNER PROFILE\n\n", style=f"bold {GOLD}")
-        owner_card.append("  | Identified Owner   : ", style="dim bright_white")
-        owner_card.append(f" {data.owner_name} \n", style=f"bold black on {NEON_GREEN}")
-        owner_card.append("  | Subscriber Registry: ", style="dim bright_white")
-        owner_card.append(f"{data.owner_carrier_registered or 'N/A'}\n", style=f"bold {ELECTRIC_CYAN}")
-        owner_card.append("  | Caller ID Registry : ", style="dim bright_white")
-        owner_card.append(f"{data.caller_id_source or 'N/A'}\n", style=f"bold {MAGENTA}")
+        if is_unknown:
+            owner_card.append("  [!] SUBSCRIBER OWNERSHIP LOOKUP\n\n", style=f"bold {GOLD}")
+            owner_card.append("  | Owner Status     : ", style="dim bright_white")
+            owner_card.append(f" {data.owner_name} \n", style=f"bold black on {GOLD}")
+            owner_card.append("  | API Status       : ", style="dim bright_white")
+            owner_card.append(f"{data.caller_id_source or 'N/A'}\n", style=f"bold {HOT_PINK}")
+            owner_card.append("  | Recommended      : ", style="dim bright_white")
+            owner_card.append("Add number to targets.json OR configure Truecaller API key\n", style=f"bold {ELECTRIC_CYAN}")
+        else:
+            owner_card.append("  [+] TARGET SUBSCRIBER / OWNER PROFILE\n\n", style=f"bold {GOLD}")
+            owner_card.append("  | Identified Owner   : ", style="dim bright_white")
+            owner_card.append(f" {data.owner_name} \n", style=f"bold black on {NEON_GREEN}")
+            owner_card.append("  | Subscriber Registry: ", style="dim bright_white")
+            owner_card.append(f"{data.owner_carrier_registered or 'N/A'}\n", style=f"bold {ELECTRIC_CYAN}")
+            owner_card.append("  | Caller ID Registry : ", style="dim bright_white")
+            owner_card.append(f"{data.caller_id_source or 'N/A'}\n", style=f"bold {MAGENTA}")
         owner_card.append("  | Line Active Status : ", style="dim bright_white")
         owner_card.append(f"{data.line_status or 'Active / In-Service'}\n", style=f"bold {SKY_BLUE}")
+        if data.estimated_location:
+            owner_card.append("  | Estimated Location : ", style="dim bright_white")
+            owner_card.append(f"{data.estimated_location}\n", style=f"bold {NEON_GREEN}")
+        if data.google_maps_url:
+            owner_card.append("  | Location Map Link  : ", style="dim bright_white")
+            owner_card.append(f"{data.google_maps_url}\n", style=f"underline {SKY_BLUE}")
         owner_card.append("  | MNP Portability    : ", style="dim bright_white")
         owner_card.append(f"{data.portability_status or 'Original Carrier (Non-Ported)'}\n", style=f"bold {VIOLET}")
         owner_card.append("  | Match Confidence   : ", style="dim bright_white")
-        owner_card.append(f"{data.confidence_score or '94% (Verified)'}\n", style=f"bold {GOLD}")
+        owner_card.append(f"{data.confidence_score or 'N/A'}\n", style=f"bold {GOLD}")
 
+        panel_title = (
+            f"[bold {NEON_GREEN}][ VERIFIED SUBSCRIBER OWNERSHIP RECORD ][/bold {NEON_GREEN}]"
+            if not is_unknown else
+            f"[bold {GOLD}][ SUBSCRIBER LOOKUP — API KEY REQUIRED ][/bold {GOLD}]"
+        )
         owner_panel = Panel(
             owner_card,
-            title=f"[bold {NEON_GREEN}][ VERIFIED SUBSCRIBER OWNERSHIP RECORD ][/bold {NEON_GREEN}]",
-            subtitle=f"[dim {ELECTRIC_CYAN}][ CNAM Identity Registry ][/dim {ELECTRIC_CYAN}]",
-            border_style=f"bold {NEON_GREEN}",
+            title=panel_title,
+            subtitle=f"[dim {ELECTRIC_CYAN}][ Use targets.json or Truecaller API for accurate names ][/dim {ELECTRIC_CYAN}]",
+            border_style=f"bold {NEON_GREEN}" if not is_unknown else f"bold {GOLD}",
             box=box.DOUBLE,
             padding=(1, 2)
         )
@@ -291,6 +322,10 @@ def display_phone_results(report: TargetIntelligenceReport) -> None:
     table.add_row("International Format", f"[bold {SKY_BLUE}]{data.international_format or 'N/A'}[/bold {SKY_BLUE}]")
     table.add_row("National Format", data.national_format or "N/A")
     table.add_row("Country of Origin", f"[bold {GOLD}]{data.country_name or 'Unknown'}[/bold {GOLD}] ({data.country_code or 'N/A'})")
+    if data.estimated_location:
+        table.add_row("Estimated Location", f"[bold {NEON_GREEN}]{data.estimated_location}[/bold {NEON_GREEN}]")
+    if data.google_maps_url:
+        table.add_row("Google Maps Link", f"[underline bold {SKY_BLUE}]{data.google_maps_url}[/underline bold {SKY_BLUE}]")
     table.add_row("Carrier Network", f"[bold black on {NEON_GREEN}] {data.carrier or 'Virtual / Unassigned'} [/bold black on {NEON_GREEN}]")
     table.add_row("Line Classification", f"[bold bright_white on deep_sky_blue1] {data.line_type} [/bold bright_white on deep_sky_blue1]")
     table.add_row("Line Status", f"[bold {NEON_GREEN}]{data.line_status or 'Active'}[/bold {NEON_GREEN}]")
@@ -381,12 +416,27 @@ def display_breach_results(report: TargetIntelligenceReport) -> None:
     """Render data breach exposure in Rich tables."""
     breaches = report.breach_records
     if not breaches:
-        panel = Panel(
-            f"[bold {NEON_GREEN}][+] No compromised breach records or credential leaks detected for this target.[/bold {NEON_GREEN}]",
-            title=f"[bold black on {NEON_GREEN}] BREACH AUDIT STATUS [/bold black on {NEON_GREEN}]",
-            border_style=f"bold {NEON_GREEN}",
-            box=box.ROUNDED
-        )
+        settings = get_settings()
+        if not settings.hibp_api_key:
+            msg = Text()
+            msg.append("  [+] No local compromise records detected for this target.\n\n", style=f"bold {NEON_GREEN}")
+            msg.append("  [!] LIVE BREACH AUDITING REQUIREMENT:\n", style=f"bold {GOLD}")
+            msg.append("  | Live Have I Been Pwned (HIBP v3) queries require an authorized API key.\n", style="bright_white")
+            msg.append("  | Synthetic mock leaks are disabled by default for accurate threat modeling.\n", style="dim white")
+            msg.append("  | To audit live breaches across 14+ billion records, set HIBP_API_KEY in your .env file.\n", style=f"bold {ELECTRIC_CYAN}")
+            panel = Panel(
+                msg,
+                title=f"[bold black on {GOLD}] BREACH AUDIT STATUS (API KEY UNCONFIGURED) [/bold black on {GOLD}]",
+                border_style=f"bold {GOLD}",
+                box=box.ROUNDED
+            )
+        else:
+            panel = Panel(
+                f"[bold {NEON_GREEN}][+] Verified: 0 compromised breach records detected in live HIBP registry for this target.[/bold {NEON_GREEN}]",
+                title=f"[bold black on {NEON_GREEN}] BREACH AUDIT STATUS (LIVE HIBP VERIFIED) [/bold black on {NEON_GREEN}]",
+                border_style=f"bold {NEON_GREEN}",
+                box=box.ROUNDED
+            )
         console.print(panel)
         return
 
