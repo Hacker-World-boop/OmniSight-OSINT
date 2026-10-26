@@ -323,7 +323,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         "|   [1] Username Info     : Sweep 15+ digital platforms & breach dumps         |\n"
         "|   [2] Phone Number Info : E.164 normalization, carrier, location & owner     |\n"
         "|   [3] IP Address Info   : Dual-mode WAN geolocation, maps link & LAN profile |\n"
-        "|   [4] Email Address Info: Compromised database search & credential leakage   |\n"
+        "|   [4] Email Address Info: Digital footprints, Gravatar & breach auditing     |\n"
         "|   [5] Exit OmniSight    : Terminate execution and return to shell            |\n"
         "+------------------------------------------------------------------------------+\n"
         "[?] Select option [1-5]:"
@@ -363,8 +363,8 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         ],
         [
             Paragraph("<b>Intelligence Engine Layer</b>", style_table_cell_bold),
-            Paragraph("<code>phone_tracker.py</code>, <code>ip_tracker.py</code>, <code>breach_hunter.py</code>", style_table_cell),
-            Paragraph("Executes specialized recon routines: telephony parsing, CNAM subscriber resolution, private LAN profiling, WAN geolocation, and platform existence checks.", style_table_cell),
+            Paragraph("<code>phone_tracker.py</code>, <code>ip_tracker.py</code>, <code>breach_hunter.py</code>, <code>email_tracker.py</code>", style_table_cell),
+            Paragraph("Executes specialized recon routines: telephony parsing, CNAM subscriber resolution, private LAN profiling, WAN geolocation, platform existence checks, and email digital footprint analysis.", style_table_cell),
         ],
         [
             Paragraph("<b>Telemetry &amp; Heuristic Layer</b>", style_table_cell_bold),
@@ -492,7 +492,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Paragraph("3.4 Pydantic Domain Models Layer", style_h2))
     story.append(Paragraph(
         "Defined in <code>modules/models.py</code>, strongly typed data contracts (<code>TargetIntelligenceReport</code>, "
-        "<code>PhoneIntelligence</code>, <code>IPIntelligence</code>, <code>UsernamePlatformResult</code>, <code>BreachRecord</code>) "
+        "<code>PhoneIntelligence</code>, <code>IPIntelligence</code>, <code>UsernamePlatformResult</code>, <code>BreachRecord</code>, <code>AppFootprint</code>, <code>GravatarProfile</code>, <code>EmailFootprintIntelligence</code>) "
         "enforce schema invariants, handle default factory initializers, and serialize payloads to standard RFC-8259 JSON.",
         style_body
     ))
@@ -554,6 +554,23 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Paragraph("<b>&gt; Dual Verification:</b> Employs HTTP status code checks combined with DOM snippet validation.", style_bullet))
     story.append(Paragraph("<b>&gt; Authentic Breach Auditing:</b> Synthetic breach generation is disabled by default (<code>MOCK_BREACH_DATA=False</code>). Queries Have I Been Pwned (HIBP v3) with live API keys for real compromise records.", style_bullet))
     story.append(Paragraph("<b>&gt; Ethical Credential Masking:</b> Automatically masks password samples (e.g. <code>p*********3</code>) to protect operational privacy.", style_bullet))
+
+    
+    story.append(Spacer(1, 4))
+
+    story.append(Paragraph("4.4 Email Digital Footprint \u0026amp; Domain Intelligence Module (<code>modules/email_tracker.py</code>)", style_h2))
+    story.append(Paragraph(
+        "Provides comprehensive digital footprint analysis for email addresses, uncovering global app associations, "
+        "webmail ecosystem classification, Gravatar public identity profiling, and OSINT investigation dork generation:",
+        style_body
+    ))
+    story.append(Paragraph("<b>\u0026gt; Email Syntax Validation \u0026amp; Domain Classification:</b> Validates RFC-5321 email syntax, classifies 20+ major webmail providers (Gmail, Outlook, Yahoo, iCloud, ProtonMail, Zoho, etc.), detects 28+ disposable/burner email services, and identifies academic, government, and corporate domains.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Gravatar / Automattic Identity Profiling:</b> Queries the Gravatar JSON API using the email MD5 hash to discover public display names, avatar images, geographic locations, bios, and linked social accounts used across WordPress, Slack, and Stack Overflow.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Global App \u0026amp; Ecosystem Footprint Enumeration (10 Services):</b> Correlates and maps the email across major ecosystems: Google/Android, Microsoft/Xbox, Apple/iCloud, Gravatar, GitHub, LinkedIn, Spotify, Amazon/AWS, Discord, and Twitter/X with context-aware status indicators.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Context-Aware Intelligence:</b> Output dynamically varies based on the actual email domain. A Gmail address produces different ecosystem bindings than Outlook, iCloud, or custom corporate domains, ensuring unique analysis for every target.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; OSINT Investigation Dork Generation (8 Links):</b> Compiles specialized search links for Google, GitHub commits, Epieos, Intelligence X, HIBP, Hunter.io, DeHashed, and Google leaked docs/pastes.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Disposable Email Detection:</b> Identifies temporary/burner emails from 28+ known disposable providers (Guerrilla Mail, Mailinator, TempMail, YOPmail, etc.) and flags them with low/ephemeral footprint scores.", style_bullet))
+
 
     story.append(PageBreak())
 
@@ -713,7 +730,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
             Paragraph("<code>--email &lt;EMAIL&gt;</code>", style_table_cell_bold),
             Paragraph("String", style_table_cell),
             Paragraph("Exclusive Target", style_table_cell),
-            Paragraph("Target email address. Audits data breach catalogs and correlates handle accounts.", style_table_cell),
+            Paragraph("Target email address. Digital footprint analysis, domain intelligence, Gravatar profiling, breach auditing \u0026amp; handle correlation.", style_table_cell),
         ],
         [
             Paragraph("<code>--output, -o &lt;FILE&gt;</code>", style_table_cell_bold),

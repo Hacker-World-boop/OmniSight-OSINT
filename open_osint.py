@@ -38,6 +38,7 @@ from rich.text import Text
 
 from config import get_settings
 from modules.breach_hunter import check_breaches, hunt_username
+from modules.email_tracker import track_email
 from modules.ip_tracker import track_ip
 from modules.models import TargetIntelligenceReport
 from modules.phone_tracker import track_phone
@@ -412,6 +413,131 @@ def display_username_results(report: TargetIntelligenceReport) -> None:
     console.print(summary_panel)
 
 
+
+def display_email_footprint_results(report) -> None:
+    """Render Email Digital Footprint intelligence in Rich tables and panels."""
+    data = report.email_data
+    if not data:
+        console.print(f"[{GOLD}]No email digital footprint data captured.[/{GOLD}]")
+        return
+
+    if data.error:
+        console.print(f"[bold {HOT_PINK}][-] Email Analysis Error: {data.error}[/bold {HOT_PINK}]")
+        return
+
+    # ─── Email Domain Intelligence Table ───────────────────────────────
+    domain_table = Table(
+        title=f"[bold black on {ELECTRIC_CYAN}] EMAIL DOMAIN & INFRASTRUCTURE INTELLIGENCE [/bold black on {ELECTRIC_CYAN}]",
+        box=box.ROUNDED,
+        border_style=f"bold {ELECTRIC_CYAN}",
+        header_style="bold bright_white on dark_blue"
+    )
+    domain_table.add_column("Attribute", style="bold bright_white", width=24)
+    domain_table.add_column("Intelligence Value", style=f"{NEON_GREEN}")
+
+    domain_table.add_row("Target Email", f"[bold {GOLD}]{data.raw_email}[/bold {GOLD}]")
+    domain_table.add_row("Format Validation", f"[bold black on {NEON_GREEN}] Valid Email Syntax [/bold black on {NEON_GREEN}]" if data.is_valid_format else f"[bold white on {HOT_PINK}] Invalid Syntax [/bold white on {HOT_PINK}]")
+    domain_table.add_row("Username (Local-Part)", f"[bold {ELECTRIC_CYAN}]{data.username}[/bold {ELECTRIC_CYAN}]")
+    domain_table.add_row("Domain", f"[bold {MAGENTA}]{data.domain}[/bold {MAGENTA}]")
+    domain_table.add_row("Domain Classification", f"[bold {SKY_BLUE}]{data.domain_type}[/bold {SKY_BLUE}]")
+    domain_table.add_row("Mail Provider", f"[bold {NEON_GREEN}]{data.mail_provider}[/bold {NEON_GREEN}]")
+    if data.is_disposable:
+        domain_table.add_row("Disposable Status", f"[bold white on {HOT_PINK}] DISPOSABLE / BURNER DETECTED [/bold white on {HOT_PINK}]")
+    else:
+        domain_table.add_row("Disposable Status", f"[bold {NEON_GREEN}]Legitimate (Non-Disposable)[/bold {NEON_GREEN}]")
+    if data.mx_records:
+        domain_table.add_row("MX Mail Servers", f"[bold {VIOLET}]{', '.join(data.mx_records[:3])}[/bold {VIOLET}]")
+    domain_table.add_row("Footprint Score", f"[bold black on {GOLD}] {data.footprint_score} [/bold black on {GOLD}]")
+
+    console.print(domain_table)
+
+    # ─── Gravatar Identity Card ───────────────────────────────────────
+    if data.gravatar and data.gravatar.exists:
+        grav = data.gravatar
+        grav_card = Text()
+        grav_card.append("  [+] PUBLIC GRAVATAR IDENTITY DISCOVERED\n\n", style=f"bold {NEON_GREEN}")
+        grav_card.append("  | Display Name    : ", style="dim bright_white")
+        grav_card.append(f"{grav.display_name or 'Anonymous'}\n", style=f"bold {GOLD}")
+        if grav.location:
+            grav_card.append("  | Location        : ", style="dim bright_white")
+            grav_card.append(f"{grav.location}\n", style=f"bold {ELECTRIC_CYAN}")
+        if grav.about_me:
+            grav_card.append("  | Bio / About     : ", style="dim bright_white")
+            grav_card.append(f"{grav.about_me[:120]}\n", style=f"bold {SKY_BLUE}")
+        if grav.avatar_url:
+            grav_card.append("  | Avatar URL      : ", style="dim bright_white")
+            grav_card.append(f"{grav.avatar_url}\n", style=f"underline {VIOLET}")
+        if grav.profile_url:
+            grav_card.append("  | Profile URL     : ", style="dim bright_white")
+            grav_card.append(f"{grav.profile_url}\n", style=f"underline {NEON_GREEN}")
+        if grav.connected_accounts:
+            grav_card.append("  | Linked Accounts : ", style="dim bright_white")
+            grav_card.append(f"{len(grav.connected_accounts)} connected service(s)\n", style=f"bold {MAGENTA}")
+            for acc in grav.connected_accounts[:5]:
+                grav_card.append(f"    > {acc}\n", style=f"dim {ELECTRIC_CYAN}")
+
+        grav_panel = Panel(
+            grav_card,
+            title=f"[bold black on {NEON_GREEN}] GRAVATAR / AUTOMATTIC IDENTITY CARD [/bold black on {NEON_GREEN}]",
+            border_style=f"bold {NEON_GREEN}",
+            box=box.DOUBLE,
+            padding=(1, 2)
+        )
+        console.print(grav_panel)
+    else:
+        console.print(Panel(
+            f"[dim {GOLD}]No public Gravatar profile detected for this email hash.[/dim {GOLD}]",
+            title=f"[bold {GOLD}][ GRAVATAR STATUS ][/bold {GOLD}]",
+            border_style=f"bold {GOLD}",
+            box=box.ROUNDED
+        ))
+
+    # ─── Global App Footprint Table ──────────────────────────────────
+    if data.app_footprints:
+        app_table = Table(
+            title=f"[bold black on {MAGENTA}] GLOBAL DIGITAL FOOTPRINT ACROSS APPS & ECOSYSTEMS ({len(data.app_footprints)} SERVICES) [/bold black on {MAGENTA}]",
+            box=box.ROUNDED,
+            border_style=f"bold {PURPLE}",
+            header_style="bold bright_white on dark_magenta"
+        )
+        app_table.add_column("Service / App", style="bold bright_white", width=22)
+        app_table.add_column("Category", style=f"{MAGENTA}", width=16)
+        app_table.add_column("Footprint Status", width=22)
+        app_table.add_column("Intelligence Details", style=f"{SKY_BLUE}", width=40)
+
+        for fp in data.app_footprints:
+            if "CONFIRMED" in fp.status:
+                status_display = f"[bold black on {NEON_GREEN}] {fp.status} [/bold black on {NEON_GREEN}]"
+            elif "CANDIDATE" in fp.status or "PROBE" in fp.status:
+                status_display = f"[bold {GOLD}]{fp.status}[/bold {GOLD}]"
+            elif "NO PUBLIC" in fp.status or "UNREGISTERED" in fp.status:
+                status_display = f"[dim {HOT_PINK}]{fp.status}[/dim {HOT_PINK}]"
+            else:
+                status_display = f"[bold {ELECTRIC_CYAN}]{fp.status}[/bold {ELECTRIC_CYAN}]"
+
+            # Truncate details for table
+            details_short = fp.details[:90] + "..." if len(fp.details) > 90 else fp.details
+            app_table.add_row(fp.service[:22], fp.category, status_display, details_short)
+
+        console.print(app_table)
+
+    # ─── OSINT Dork Links Panel ──────────────────────────────────────
+    if data.osint_dork_links:
+        dork_text = Text()
+        dork_text.append("Investigate this email across global intelligence archives:\n", style="dim white")
+        for name, link in data.osint_dork_links.items():
+            dork_text.append(f"\n[>] {name}: ", style=f"bold {ELECTRIC_CYAN}")
+            dork_text.append(link, style=f"underline {GOLD}")
+
+        dork_panel = Panel(
+            dork_text,
+            title=f"[bold black on {ELECTRIC_CYAN}] EMAIL OSINT INTELLIGENCE DORK LINKS [/bold black on {ELECTRIC_CYAN}]",
+            border_style=f"bold {ELECTRIC_CYAN}",
+            box=box.ROUNDED
+        )
+        console.print(dork_panel)
+
+
 def display_breach_results(report: TargetIntelligenceReport) -> None:
     """Render data breach exposure in Rich tables."""
     breaches = report.breach_records
@@ -517,13 +643,19 @@ async def execute_investigation(args: argparse.Namespace) -> TargetIntelligenceR
                 username_part = target_value.split("@")[0] if "@" in target_value else target_value
                 concurrency = args.concurrency or settings.max_concurrent_requests
 
+                # Digital Footprint Analysis (Domain, Gravatar, App Footprints)
+                email_footprint_task = track_email(target_value, session=session)
+
+                # Breach & Username correlation tasks
                 breach_task = check_breaches(target_value, session=session)
                 username_task = hunt_username(username_part, concurrency_limit=concurrency, session=session)
 
-                breaches, accounts = await asyncio.gather(breach_task, username_task)
+                email_data, breaches, accounts = await asyncio.gather(
+                    email_footprint_task, breach_task, username_task
+                )
+                report.email_data = email_data
                 report.breach_records = breaches
                 report.username_accounts = accounts
-
     return report
 
 
@@ -560,6 +692,8 @@ def render_report(report: TargetIntelligenceReport, output_path: Optional[str] =
         render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
         display_breach_results(report)
     elif report.target_type == "email":
+        render_section_divider("EMAIL DIGITAL FOOTPRINT & DOMAIN INTELLIGENCE", ELECTRIC_CYAN)
+        display_email_footprint_results(report)
         render_section_divider("BREACH EXPOSURE & CREDENTIAL AUDIT", HOT_PINK)
         display_breach_results(report)
         render_section_divider("PLATFORM HANDLE RECONNAISSANCE", ELECTRIC_CYAN)
@@ -590,7 +724,7 @@ def render_interactive_menu() -> None:
     menu_table.add_row("[1]", "Username Info", "Probe 13+ digital platforms, measure latency & query breach dumps")
     menu_table.add_row("[2]", "Phone Number Info", "E.164 normalization, carrier classification & subscriber ownership")
     menu_table.add_row("[3]", "IP Address Info", "Dual-mode WAN geolocation, ASN prefix, PTR lookup & LAN heuristics")
-    menu_table.add_row("[4]", "Email Address Info", "Data breach auditing, compromised records & credential exposure")
+    menu_table.add_row("[4]", "Email Address Info", "Digital footprint analysis, domain intelligence, Gravatar & breach auditing")
     menu_table.add_row("[5]", "Exit OmniSight-OSINT", "Terminate session and return to shell")
 
     console.print()
@@ -712,7 +846,7 @@ def parse_arguments() -> argparse.ArgumentParser:
     target_group.add_argument(
         "--email",
         type=str,
-        help="Target email address for breach exposure and handle correlation."
+        help="Target email address for digital footprint analysis, domain intelligence, Gravatar profiling & breach auditing."
     )
 
     # Operational Options

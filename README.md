@@ -64,6 +64,7 @@ flowchart TD
         PhoneEngine["modules/phone_tracker.py<br/>Telephony & Subscriber Engine"]
         IPEngine["modules/ip_tracker.py<br/>Dual-Mode IP & LAN Profiler"]
         BreachEngine["modules/breach_hunter.py<br/>Platform & Breach Telemetry"]
+        EmailEngine["modules/email_tracker.py<br/>Email Footprint & Domain Analyzer"]
     end
 
     subgraph Telemetry_Layer["Telemetry Sources & Directories"]
@@ -76,6 +77,8 @@ flowchart TD
         LANHeuristic["GPON/ONT/Router Vendor Heuristics"]
         PlatformProbes["15+ Async Probes (incl. Facebook & LinkedIn)"]
         HIBPAPI["HIBP v3 Live Breach Database"]
+        GravatarAPI["Gravatar JSON API (MD5 Hash Profile)"]
+        DomainClassifier["20+ Webmail Provider & 28+ Disposable DB"]
     end
 
     CLI --> Core_Layer
@@ -94,6 +97,11 @@ flowchart TD
 
     BreachEngine --> PlatformProbes
     BreachEngine --> HIBPAPI
+
+    EmailEngine --> GravatarAPI
+    EmailEngine --> DomainClassifier
+    EmailEngine --> PlatformProbes
+    EmailEngine --> HIBPAPI
 
     Engine_Layer --> Models
     Models --> RichUI
@@ -283,7 +291,8 @@ modules/
 ├── models.py             # Pydantic v2 schemas for all intelligence entities
 ├── phone_tracker.py      # Telephony, E.164, Carrier & Subscriber Ownership Engine
 ├── ip_tracker.py         # Dual-Mode Public WAN Geolocation & RFC-1918 LAN Profiler
-└── breach_hunter.py      # Multi-Platform Account Presence & Breach Exposure Hunter
+├── breach_hunter.py      # Multi-Platform Account Presence & Breach Exposure Hunter
+└── email_tracker.py      # Email Digital Footprint & Domain Intelligence Analyzer
 ```
 
 ### 1. Telephony & Subscriber Identity Module (`modules/phone_tracker.py`)
@@ -320,6 +329,14 @@ modules/
 - **Latency Profiling:** Measures round-trip HTTP latency per endpoint with color-coded operational latency metrics.
 - **Authentic Breach Auditing:** Integrates Have I Been Pwned (HIBP) v3 API. Synthetic breach data is disabled by default (`MOCK_BREACH_DATA=False`) to ensure factual threat intelligence without false alarms.
 - **Ethical Credential Masking:** Applies automated password and token masking (e.g. `p*********3` or `[BCRYPT_HASH]`) to safeguard against shoulder-surfing and terminal leakage.
+
+### 4. Email Digital Footprint & Domain Intelligence Module (`modules/email_tracker.py`)
+- **Email Syntax & Domain Classification:** Validates RFC-5321 email syntax, classifies 20+ major global webmail providers (Gmail, Outlook, Yahoo, iCloud, ProtonMail, Zoho, Mail.ru, Yandex, Fastmail, Tuta, AOL, GMX, etc.), detects 28+ disposable/burner email services, and identifies academic, government, and corporate domains.
+- **Gravatar / Automattic Identity Profiling:** Queries the Gravatar JSON API using the email's MD5 hash to discover public display names, avatar images, geographic locations, bios, and linked social accounts used across WordPress, Slack, Stack Overflow, and millions of websites.
+- **Global App & Ecosystem Footprint Enumeration (10 Services):** Maps the email across major global ecosystems — Google/Android, Microsoft/Xbox, Apple/iCloud, Gravatar, GitHub, LinkedIn, Spotify, Amazon/AWS, Discord, and Twitter/X — with context-aware status indicators (*CONFIRMED ECOSYSTEM BOUND*, *IDENTITY CANDIDATE*, *PROBE CANDIDATE*).
+- **Context-Aware Intelligence:** Output dynamically varies based on actual email domain. A `gmail.com` address produces different ecosystem bindings than an `outlook.com`, `icloud.com`, or custom corporate domain, ensuring unique analysis for every target.
+- **OSINT Investigation Dork Generation (8 Links):** Compiles specialized search links: Google exact match, GitHub public commits, Epieos Google Account recon, Intelligence X archive, HIBP web audit, Hunter.io domain intelligence, DeHashed credential archive, and Google leaked docs/pastes.
+- **Disposable Email Detection:** Identifies temporary/burner emails from 28+ known disposable providers and flags them with low/ephemeral footprint scores.
 
 ---
 
@@ -400,9 +417,9 @@ When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal render
 |            |                              |  estimated location & owner     |
 |    [3]     |  IP Address Info             |  Dual-mode WAN geolocation,     |
 |            |                              |  maps link & LAN heuristics     |
-|    [4]     |  Email Address Info          |  Data breach auditing,          |
-|            |                              |  compromised records &          |
-|            |                              |  credential exposure            |
+|    [4]     |  Email Address Info          |  Digital footprint analysis,    |
+|            |                              |  domain intelligence, Gravatar  |
+|            |                              |  & breach auditing              |
 |    [5]     |  Exit OmniSight-OSINT        |  Terminate session and return   |
 |            |                              |  to shell                       |
 +-----------------------------------------------------------------------------+
@@ -476,7 +493,7 @@ Pass targets directly via command-line flags for automation pipelines or scripti
 | `--phone` | String | CLI Flag | Target telephone number (E.164 format, e.g. `+14155552671`) with subscriber ownership resolution |
 | `--ip` | String | CLI Flag | Target IPv4/IPv6 or private RFC-1918 LAN address |
 | `--username` | String | CLI Flag | Target username handle for platform sweeps & breach auditing |
-| `--email` | String | CLI Flag | Target email address for breach exposure assessment |
+| `--email` | String | CLI Flag | Target email address for digital footprint analysis, domain intelligence, Gravatar profiling & breach auditing |
 | `--output`, `-o` | File Path | Optional | Export intelligence payload to structured JSON file |
 | `--concurrency`, `-c` | Integer | Optional | Max asynchronous workers (default: 15) |
 | `--verbose`, `-v` | Flag | Optional | Enable verbose debug logging messages |
