@@ -39,6 +39,7 @@ from rich.text import Text
 from config import get_settings
 from modules.breach_hunter import check_breaches, hunt_username
 from modules.email_tracker import track_email
+from modules.mac_tracker import track_mac
 from modules.ip_tracker import track_ip
 from modules.models import TargetIntelligenceReport
 from modules.phone_tracker import track_phone
@@ -538,6 +539,76 @@ def display_email_footprint_results(report) -> None:
         console.print(dork_panel)
 
 
+def display_mac_results(report: TargetIntelligenceReport) -> None:
+    """Render MAC / Wireless BSSID hardware intelligence and spatial mapping in Rich tables."""
+    data = report.mac_data
+    if not data:
+        console.print(f"[{GOLD}]No MAC intelligence data captured.[/{GOLD}]")
+        return
+
+    if not data.is_valid:
+        console.print(f"[bold {HOT_PINK}][-] Syntax Error: {data.tracking_limitation}[/bold {HOT_PINK}]")
+        return
+
+    # Randomization Warning Callout
+    if data.is_randomized:
+        rand_text = Text()
+        rand_text.append("[!] PRIVACY SHIELD DETECTED: ", style=f"bold {GOLD}")
+        rand_text.append("Randomized / Locally Administered MAC Address Scheme\n\n", style="bold bright_white")
+        rand_text.append(data.tracking_limitation, style="bright_white")
+        
+        rand_panel = Panel(
+            rand_text,
+            title=f"[bold black on {GOLD}] TRACKING LIMITATION WARNING [/bold black on {GOLD}]",
+            border_style=f"bold {GOLD}",
+            box=box.ROUNDED
+        )
+        console.print(rand_panel)
+        console.print()
+
+    # Hardware & Telemetry Table
+    table = Table(
+        title=f"[bold black on {ELECTRIC_CYAN}] HARDWARE OUI & WIRELESS BSSID INTELLIGENCE [/bold black on {ELECTRIC_CYAN}]",
+        box=box.ROUNDED,
+        border_style=f"bold {ELECTRIC_CYAN}",
+        header_style="bold bright_white on dark_blue"
+    )
+    table.add_column("Attribute", style="bold bright_white", width=26)
+    table.add_column("Extracted Telemetry", style=f"{NEON_GREEN}")
+
+    table.add_row("Target Hardware MAC", f"[bold {GOLD}]{data.normalized_mac}[/bold {GOLD}]")
+    table.add_row("Address Scheme", f"[bold black on {HOT_PINK}] Locally Administered (Randomized) [/bold black on {HOT_PINK}]" if data.is_randomized else f"[bold black on {NEON_GREEN}] IEEE Globally Unique OUI [/bold black on {NEON_GREEN}]")
+    table.add_row("OUI Hex Block", f"[bold {MAGENTA}]{data.oui_prefix or 'N/A'}[/bold {MAGENTA}]")
+    table.add_row("Manufacturer / Vendor", f"[bold {NEON_GREEN}]{data.hardware_vendor}[/bold {NEON_GREEN}]")
+    table.add_row("Hardware Profile / Type", f"[bold {SKY_BLUE}]{data.device_type}[/bold {SKY_BLUE}]")
+    table.add_row("Lookup Mode", f"[bold {PURPLE}]{data.lookup_type.upper()}[/bold {PURPLE}]")
+    table.add_row("Wireless BSSID Audit", f"[bold {VIOLET}]{data.bssid_status}[/bold {VIOLET}]")
+    
+    if data.coordinates:
+        table.add_row("GPS Spatial Coordinates", f"[bold {GOLD}]{data.coordinates}[/bold {GOLD}]")
+    if data.location_name:
+        table.add_row("Vicinity / Location", f"[bold {NEON_GREEN}]{data.location_name}[/bold {NEON_GREEN}]")
+    if data.google_maps_url:
+        table.add_row("Google Maps Spatial Link", f"[underline bold {SKY_BLUE}]{data.google_maps_url}[/underline bold {SKY_BLUE}]")
+
+    console.print(table)
+
+    # OSINT Dork Links
+    if data.osint_dork_links:
+        dork_text = Text()
+        dork_text.append("Investigate this MAC / BSSID across wireless and hardware databases:\n", style="dim white")
+        for name, link in data.osint_dork_links.items():
+            dork_text.append(f"\n[>] {name}: ", style=f"bold {ELECTRIC_CYAN}")
+            dork_text.append(link, style=f"underline {GOLD}")
+
+        dork_panel = Panel(
+            dork_text,
+            title=f"[bold black on {ELECTRIC_CYAN}] MAC / BSSID OSINT TRIANGULATION DORKS [/bold black on {ELECTRIC_CYAN}]",
+            border_style=f"bold {ELECTRIC_CYAN}",
+            box=box.ROUNDED
+        )
+        console.print(dork_panel)
+
 def display_breach_results(report: TargetIntelligenceReport) -> None:
     """Render data breach exposure in Rich tables."""
     breaches = report.breach_records
@@ -613,6 +684,9 @@ async def execute_investigation(args: argparse.Namespace) -> TargetIntelligenceR
     elif args.email:
         target_type = "email"
         target_value = args.email
+    elif args.mac:
+        target_type = "mac"
+        target_value = args.mac
 
     report = TargetIntelligenceReport(
         target_type=target_type,
@@ -629,6 +703,10 @@ async def execute_investigation(args: argparse.Namespace) -> TargetIntelligenceR
 
             elif target_type == "phone":
                 report.phone_data = await track_phone(target_value, session=session)
+
+            elif target_type == "mac":
+                lookup_mode = "full_geolocation" if not getattr(args, 'vendor_only', False) else "vendor_only"
+                report.mac_data = await track_mac(target_value, lookup_type=lookup_mode, session=session)
 
             elif target_type == "username":
                 concurrency = args.concurrency or settings.max_concurrent_requests
@@ -698,6 +776,9 @@ def render_report(report: TargetIntelligenceReport, output_path: Optional[str] =
         display_breach_results(report)
         render_section_divider("PLATFORM HANDLE RECONNAISSANCE", ELECTRIC_CYAN)
         display_username_results(report)
+    elif report.target_type == "mac":
+        render_section_divider("HARDWARE OUI & WIRELESS BSSID GEOLOCATION", ELECTRIC_CYAN)
+        display_mac_results(report)
 
     # Render scan completion badge
     render_scan_complete(report.target_type)
@@ -725,7 +806,8 @@ def render_interactive_menu() -> None:
     menu_table.add_row("[2]", "Phone Number Info", "E.164 normalization, carrier classification & subscriber ownership")
     menu_table.add_row("[3]", "IP Address Info", "Dual-mode WAN geolocation, ASN prefix, PTR lookup & LAN heuristics")
     menu_table.add_row("[4]", "Email Address Info", "Digital footprint analysis, domain intelligence, Gravatar & breach auditing")
-    menu_table.add_row("[5]", "Exit OmniSight-OSINT", "Terminate session and return to shell")
+    menu_table.add_row("[5]", "MAC / BSSID Geolocation", "OUI vendor profiling, randomization check & wireless GPS triangulation")
+    menu_table.add_row("[6]", "Exit OmniSight-OSINT", "Terminate session and return to shell")
 
     console.print()
     console.print(menu_table)
@@ -737,17 +819,17 @@ def run_interactive_mode(args: argparse.Namespace) -> None:
     while True:
         render_interactive_menu()
         try:
-            choice = console.input(f"[bold {ELECTRIC_CYAN}][?] Select option [1-5]: [/bold {ELECTRIC_CYAN}]").strip()
+            choice = console.input(f"[bold {ELECTRIC_CYAN}][?] Select option [1-6]: [/bold {ELECTRIC_CYAN}]").strip()
         except (KeyboardInterrupt, EOFError):
             console.print(f"\n[dim cyan][*] Session ended by user. Exiting.[/dim cyan]")
             break
 
-        if choice in ("5", "q", "quit", "exit"):
+        if choice in ("6", "q", "quit", "exit"):
             console.print(f"\n[bold {ELECTRIC_CYAN}][*] Exiting OmniSight-OSINT. Stay secure.[/bold {ELECTRIC_CYAN}]\n")
             break
 
-        if choice not in ("1", "2", "3", "4"):
-            console.print(f"[bold {HOT_PINK}][-] Invalid selection '{choice}'. Please enter 1, 2, 3, 4, or 5.[/bold {HOT_PINK}]\n")
+        if choice not in ("1", "2", "3", "4", "5"):
+            console.print(f"[bold {HOT_PINK}][-] Invalid selection '{choice}'. Please enter 1, 2, 3, 4, 5, or 6.[/bold {HOT_PINK}]\n")
             continue
 
         target_val = ""
@@ -766,6 +848,9 @@ def run_interactive_mode(args: argparse.Namespace) -> None:
             elif choice == "4":
                 target_field = "email"
                 target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target email address (e.g. user@example.com): [/bold {NEON_GREEN}]").strip()
+            elif choice == "5":
+                target_field = "mac"
+                target_val = console.input(f"[bold {NEON_GREEN}][?] Enter target MAC address or BSSID (e.g. 00:11:22:33:44:55): [/bold {NEON_GREEN}]").strip()
 
             if not target_val:
                 console.print(f"[bold {HOT_PINK}][-] Error: Target value cannot be empty.[/bold {HOT_PINK}]\n")
@@ -784,6 +869,8 @@ def run_interactive_mode(args: argparse.Namespace) -> None:
             phone=target_val if target_field == "phone" else None,
             username=target_val if target_field == "username" else None,
             email=target_val if target_field == "email" else None,
+            mac=target_val if target_field == "mac" else None,
+            vendor_only=False,
             output=output_file,
             concurrency=args.concurrency,
             verbose=args.verbose,
@@ -844,12 +931,22 @@ def parse_arguments() -> argparse.ArgumentParser:
         help="Target user handle for concurrent platform existence and breach auditing."
     )
     target_group.add_argument(
+        "--mac",
+        type=str,
+        help="Target MAC address or wireless access point BSSID for OUI vendor profiling and spatial mapping."
+    )
+    target_group.add_argument(
         "--email",
         type=str,
         help="Target email address for digital footprint analysis, domain intelligence, Gravatar profiling & breach auditing."
     )
 
     # Operational Options
+    parser.add_argument(
+        "--vendor-only",
+        action="store_true",
+        help="Perform hardware vendor OUI matching only without Wi-Fi spatial geolocation lookup."
+    )
     parser.add_argument(
         "--output", "-o",
         type=str,
@@ -890,7 +987,7 @@ def main() -> None:
         render_banner()
 
     # If any target CLI argument is supplied, execute directly in CLI mode
-    if args.ip or args.phone or args.username or args.email:
+    if args.ip or args.phone or args.username or args.email or getattr(args, "mac", None):
         try:
             report = asyncio.run(execute_investigation(args))
             render_report(report, args.output)

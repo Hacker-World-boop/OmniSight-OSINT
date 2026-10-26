@@ -3,7 +3,7 @@ OmniSight-OSINT Domain Models
 =============================
 Strongly typed Pydantic models for OSINT entities: IP Intelligence,
 Phone Intelligence, Social/Profile Enumeration, Data Breach Records,
-and Global Email Digital Footprint Intelligence.
+Global Email Digital Footprint Intelligence, and MAC/BSSID Hardware Geolocation.
 """
 
 from datetime import datetime, timezone
@@ -147,18 +147,40 @@ class EmailFootprintIntelligence(BaseModel):
     error: Optional[str] = Field(default=None, description="Error message if analysis failed")
 
 
+class MacIntelligence(BaseModel):
+    """Normalized schema for hardware MAC address & wireless BSSID geolocation."""
+    raw_mac: str = Field(description="Original user-provided hardware address string")
+    normalized_mac: str = Field(description="Standard uppercase colon-separated format (AA:BB:CC:DD:EE:FF)")
+    is_valid: bool = Field(default=True, description="Whether MAC passes 48-bit EUI-48 syntax validation")
+    is_randomized: bool = Field(default=False, description="Whether MAC utilizes Locally Administered / Randomized address scheme")
+    oui_prefix: Optional[str] = Field(default=None, description="First 3 octets (OUI block)")
+    hardware_vendor: Optional[str] = Field(default=None, description="IEEE registered hardware manufacturing vendor")
+    device_type: Optional[str] = Field(default=None, description="Hardware class: Router, Access Point, NIC, IoT, Virtual NIC")
+    lookup_type: str = Field(default="full_geolocation", description="Lookup mode: vendor_only or full_geolocation")
+    latitude: Optional[float] = Field(default=None, description="GPS Latitude coordinate if wireless BSSID is mapped")
+    longitude: Optional[float] = Field(default=None, description="GPS Longitude coordinate if wireless BSSID is mapped")
+    coordinates: Optional[str] = Field(default=None, description="Combined 'lat,lon' coordinates string")
+    location_name: Optional[str] = Field(default=None, description="Mapped geographic vicinity / premises name")
+    google_maps_url: Optional[str] = Field(default=None, description="Direct Google Maps URL link for the BSSID coordinates")
+    bssid_status: Optional[str] = Field(default=None, description="BSSID spatial audit classification")
+    tracking_limitation: Optional[str] = Field(default=None, description="Operational limitation warning for randomized MACs")
+    osint_dork_links: Dict[str, str] = Field(default_factory=dict, description="Investigation dork links for BSSID and hardware mapping")
+    error: Optional[str] = Field(default=None, description="Error message if analysis failed")
+
+
 class TargetIntelligenceReport(BaseModel):
     """Unified collection payload aggregating all intelligence gathered on a target."""
-    target_type: str = Field(description="Target classification: email, username, ip, or phone")
+    target_type: str = Field(description="Target classification: email, username, ip, phone, or mac")
     target_value: str = Field(description="The primary target identifier analyzed")
     generated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="UTC timestamp of report generation"
     )
-    tool_version: str = Field(default="1.0.0", description="OmniSight-OSINT version")
+    tool_version: str = Field(default="1.2.0", description="OmniSight-OSINT version")
     ip_data: Optional[IPIntelligence] = Field(default=None)
     phone_data: Optional[PhoneIntelligence] = Field(default=None)
     email_data: Optional[EmailFootprintIntelligence] = Field(default=None)
+    mac_data: Optional[MacIntelligence] = Field(default=None)
     username_accounts: List[UsernamePlatformResult] = Field(default_factory=list)
     breach_records: List[BreachRecord] = Field(default_factory=list)
     errors: List[str] = Field(default_factory=list)

@@ -65,6 +65,7 @@ flowchart TD
         IPEngine["modules/ip_tracker.py<br/>Dual-Mode IP & LAN Profiler"]
         BreachEngine["modules/breach_hunter.py<br/>Platform & Breach Telemetry"]
         EmailEngine["modules/email_tracker.py<br/>Email Footprint & Domain Analyzer"]
+        MacEngine["modules/mac_tracker.py<br/>MAC & BSSID Geolocation Engine"]
     end
 
     subgraph Telemetry_Layer["Telemetry Sources & Directories"]
@@ -79,6 +80,8 @@ flowchart TD
         HIBPAPI["HIBP v3 Live Breach Database"]
         GravatarAPI["Gravatar JSON API (MD5 Hash Profile)"]
         DomainClassifier["20+ Webmail Provider & 28+ Disposable DB"]
+        IEEE_OUI["IEEE OUI Hardware Registry & Local Cache"]
+        WigleBSSID["WiGLE & Wireless Spatial Geolocation"]
     end
 
     CLI --> Core_Layer
@@ -102,6 +105,10 @@ flowchart TD
     EmailEngine --> DomainClassifier
     EmailEngine --> PlatformProbes
     EmailEngine --> HIBPAPI
+
+    MacEngine --> IEEE_OUI
+    MacEngine --> WigleBSSID
+    MacEngine --> GoogleMaps
 
     Engine_Layer --> Models
     Models --> RichUI
@@ -292,7 +299,8 @@ modules/
 ├── phone_tracker.py      # Telephony, E.164, Carrier & Subscriber Ownership Engine
 ├── ip_tracker.py         # Dual-Mode Public WAN Geolocation & RFC-1918 LAN Profiler
 ├── breach_hunter.py      # Multi-Platform Account Presence & Breach Exposure Hunter
-└── email_tracker.py      # Email Digital Footprint & Domain Intelligence Analyzer
+├── email_tracker.py      # Email Digital Footprint & Domain Intelligence Analyzer
+└── mac_tracker.py        # MAC Hardware OUI & Wireless BSSID Geolocation Engine
 ```
 
 ### 1. Telephony & Subscriber Identity Module (`modules/phone_tracker.py`)
@@ -337,6 +345,13 @@ modules/
 - **Context-Aware Intelligence:** Output dynamically varies based on actual email domain. A `gmail.com` address produces different ecosystem bindings than an `outlook.com`, `icloud.com`, or custom corporate domain, ensuring unique analysis for every target.
 - **OSINT Investigation Dork Generation (8 Links):** Compiles specialized search links: Google exact match, GitHub public commits, Epieos Google Account recon, Intelligence X archive, HIBP web audit, Hunter.io domain intelligence, DeHashed credential archive, and Google leaked docs/pastes.
 - **Disposable Email Detection:** Identifies temporary/burner emails from 28+ known disposable providers and flags them with low/ephemeral footprint scores.
+
+### 5. MAC Hardware OUI & Wireless BSSID Geolocation Module (`modules/mac_tracker.py`)
+- **Hardware Address Normalization:** Automatically strips non-hexadecimal delimiters (hyphens, spaces, periods) and converts input strings into standard uppercase colon-separated format (`AA:BB:CC:DD:EE:FF`).
+- **Randomized / Locally Administered MAC Detection:** Inspects bit 1 of the initial octet (second hex character in `2, 6, A, E`). Proactively warns analysts if the device is using an ephemeral/randomized MAC address scheme designed for privacy, which restricts physical hardware tracking.
+- **IEEE OUI Manufacturer & Vendor Profiling:** Resolves hardware manufacturer and device classes (e.g., Cisco, Ubiquiti UniFi, TP-Link, Huawei ONT, Espressif IoT, Apple, Dell, VMware) using a local offline OUI cache and live IEEE registry lookups.
+- **Wireless BSSID Geolocation & Spatial Mapping:** Cross-references stationary Wi-Fi router BSSIDs with wireless spatial mapping data and generates pinpoint Google Maps links for physical access point locations.
+- **Automated OSINT Reverse Lookups (6 Dorks):** Generates direct queries for WiGLE Wireless Network search, MACVendors, MACLookup, Google Spatial Search, GitHub public code/pcaps, and Shodan BSSID queries.
 
 ---
 
@@ -420,11 +435,13 @@ When executing OmniSight-OSINT on Linux (`./open_osint.py`), the terminal render
 |    [4]     |  Email Address Info          |  Digital footprint analysis,    |
 |            |                              |  domain intelligence, Gravatar  |
 |            |                              |  & breach auditing              |
-|    [5]     |  Exit OmniSight-OSINT        |  Terminate session and return   |
+|    [5]     |  MAC / BSSID Geolocation     |  OUI vendor profiling,         |
+|            |                              |  randomization check & GPS     |
+|    [6]     |  Exit OmniSight-OSINT        |  Terminate session and return   |
 |            |                              |  to shell                       |
 +-----------------------------------------------------------------------------+
 
-[?] Select option [1-5]: 
+[?] Select option [1-6]: 
 ```
 
 ---
@@ -493,6 +510,8 @@ Pass targets directly via command-line flags for automation pipelines or scripti
 | `--phone` | String | CLI Flag | Target telephone number (E.164 format, e.g. `+14155552671`) with subscriber ownership resolution |
 | `--ip` | String | CLI Flag | Target IPv4/IPv6 or private RFC-1918 LAN address |
 | `--username` | String | CLI Flag | Target username handle for platform sweeps & breach auditing |
+| `--mac` | String | CLI Flag | Target MAC address or wireless access point BSSID for OUI vendor profiling and spatial mapping |
+| `--vendor-only` | Flag | Optional | Perform hardware vendor OUI matching only without Wi-Fi spatial geolocation lookup |
 | `--email` | String | CLI Flag | Target email address for digital footprint analysis, domain intelligence, Gravatar profiling & breach auditing |
 | `--output`, `-o` | File Path | Optional | Export intelligence payload to structured JSON file |
 | `--concurrency`, `-c` | Integer | Optional | Max asynchronous workers (default: 15) |

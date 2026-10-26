@@ -363,8 +363,8 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
         ],
         [
             Paragraph("<b>Intelligence Engine Layer</b>", style_table_cell_bold),
-            Paragraph("<code>phone_tracker.py</code>, <code>ip_tracker.py</code>, <code>breach_hunter.py</code>, <code>email_tracker.py</code>", style_table_cell),
-            Paragraph("Executes specialized recon routines: telephony parsing, CNAM subscriber resolution, private LAN profiling, WAN geolocation, platform existence checks, and email digital footprint analysis.", style_table_cell),
+            Paragraph("<code>phone_tracker.py</code>, <code>ip_tracker.py</code>, <code>breach_hunter.py</code>, <code>email_tracker.py</code>, <code>mac_tracker.py</code>", style_table_cell),
+            Paragraph("Executes specialized recon routines: telephony parsing, CNAM subscriber resolution, private LAN profiling, WAN geolocation, platform existence checks, email digital footprints, and MAC/BSSID wireless geolocation.", style_table_cell),
         ],
         [
             Paragraph("<b>Telemetry &amp; Heuristic Layer</b>", style_table_cell_bold),
@@ -492,7 +492,7 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Paragraph("3.4 Pydantic Domain Models Layer", style_h2))
     story.append(Paragraph(
         "Defined in <code>modules/models.py</code>, strongly typed data contracts (<code>TargetIntelligenceReport</code>, "
-        "<code>PhoneIntelligence</code>, <code>IPIntelligence</code>, <code>UsernamePlatformResult</code>, <code>BreachRecord</code>, <code>AppFootprint</code>, <code>GravatarProfile</code>, <code>EmailFootprintIntelligence</code>) "
+        "<code>PhoneIntelligence</code>, <code>IPIntelligence</code>, <code>UsernamePlatformResult</code>, <code>BreachRecord</code>, <code>AppFootprint</code>, <code>GravatarProfile</code>, <code>EmailFootprintIntelligence</code>, <code>MacIntelligence</code>) "
         "enforce schema invariants, handle default factory initializers, and serialize payloads to standard RFC-8259 JSON.",
         style_body
     ))
@@ -570,6 +570,22 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
     story.append(Paragraph("<b>\u0026gt; Context-Aware Intelligence:</b> Output dynamically varies based on the actual email domain. A Gmail address produces different ecosystem bindings than Outlook, iCloud, or custom corporate domains, ensuring unique analysis for every target.", style_bullet))
     story.append(Paragraph("<b>\u0026gt; OSINT Investigation Dork Generation (8 Links):</b> Compiles specialized search links for Google, GitHub commits, Epieos, Intelligence X, HIBP, Hunter.io, DeHashed, and Google leaked docs/pastes.", style_bullet))
     story.append(Paragraph("<b>\u0026gt; Disposable Email Detection:</b> Identifies temporary/burner emails from 28+ known disposable providers (Guerrilla Mail, Mailinator, TempMail, YOPmail, etc.) and flags them with low/ephemeral footprint scores.", style_bullet))
+
+
+    
+    story.append(Spacer(1, 4))
+
+    story.append(Paragraph("4.5 MAC Hardware OUI \u0026amp; Wireless BSSID Geolocation Module (<code>modules/mac_tracker.py</code>)", style_h2))
+    story.append(Paragraph(
+        "Performs physical hardware identification, IEEE OUI manufacturer resolution, privacy-shielded randomized MAC detection, "
+        "and wireless BSSID spatial triangulation across global mapping registries:",
+        style_body
+    ))
+    story.append(Paragraph("<b>\u0026gt; Hardware Address Normalization:</b> Automatically strips delimiters (hyphens, spaces, periods) and normalizes input to standardized 17-character uppercase colon-separated notation (<code>AA:BB:CC:DD:EE:FF</code>).", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Randomized / Locally Administered MAC Detection:</b> Evaluates bit 1 of the initial octet (second hex nibble in 2, 6, A, E). Transparently warns analysts when a device is utilizing an ephemeral randomized MAC designed to obstruct device tracking.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; IEEE OUI Vendor Registry Profiling:</b> Resolves device manufacturers (Cisco, Apple, Google, Ubiquiti, Huawei, TP-Link, Espressif IoT, VMware, etc.) using offline high-speed cache and online IEEE OUI lookups.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Wireless BSSID Geolocation \u0026amp; Spatial Mapping:</b> Cross-references stationary router access point BSSIDs with wireless spatial databases, returning Google Maps coordinates and direct search endpoints.", style_bullet))
+    story.append(Paragraph("<b>\u0026gt; Automated OSINT Dork Generation:</b> Builds 6 specialized reverse queries across WiGLE Wireless Network, MACVendors, MACLookup, Google Spatial Search, GitHub pcap repositories, and Shodan BSSID queries.", style_bullet))
 
 
     story.append(PageBreak())
@@ -725,6 +741,12 @@ def build_pdf(filename: str = "OmniSight_OSINT_Documentation.pdf") -> str:
             Paragraph("String", style_table_cell),
             Paragraph("Exclusive Target", style_table_cell),
             Paragraph("Target handle. Concurrently audits account existence across 13+ digital platforms and queries breach databases.", style_table_cell),
+        ],
+        [
+            Paragraph("<code>--mac &lt;ADDRESS&gt;</code>", style_table_cell_bold),
+            Paragraph("String", style_table_cell),
+            Paragraph("Exclusive Target", style_table_cell),
+            Paragraph("Target MAC address or wireless access point BSSID. Performs IEEE OUI vendor resolution, randomized MAC detection, and spatial mapping.", style_table_cell),
         ],
         [
             Paragraph("<code>--email &lt;EMAIL&gt;</code>", style_table_cell_bold),
